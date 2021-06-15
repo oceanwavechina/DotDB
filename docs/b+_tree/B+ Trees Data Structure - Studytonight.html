@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<!-- saved from url=(0081)https://www.studytonight.com/advanced-data-structures/b-plus-trees-data-structure -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B+ Trees Data Structure - Studytonight</title>
+<meta name="description" content="A B+ tree is an extension of a B plus tree which makes the search, insert and delete operations more efficient with pictorial representation and example.">
+<meta property="og:image" content="abc">
+<link rel="canonical" href="https://www.studytonight.com/advanced-data-structures/b-plus-trees-data-structure">
+<link href="./B+ Trees Data Structure - Studytonight_files/bootstrap.v3.1618313911.css" rel="stylesheet">
+<link href="./B+ Trees Data Structure - Studytonight_files/bootstrap-icons.1613855787.css" rel="stylesheet">
+<link href="./B+ Trees Data Structure - Studytonight_files/prism.1610296751.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="https://www.studytonight.com/css/resource/favicon.png">
+<style>
+#body-content p.output br {
+    display: none;
+}
+</style>
+<script async="" type="text/javascript" src="./B+ Trees Data Structure - Studytonight_files/gpt.js"></script><script async="" src="./B+ Trees Data Structure - Studytonight_files/apstag.js"></script><script async="" src="./B+ Trees Data Structure - Studytonight_files/async-ads.js"></script><script src="./B+ Trees Data Structure - Studytonight_files/cse_element__en.js" type="text/javascript"></script><link type="text/css" rel="stylesheet" href="./B+ Trees Data Structure - Studytonight_files/default+en.css"><link type="text/css" rel="stylesheet" href="./B+ Trees Data Structure - Studytonight_files/default.css"><style type="text/css">.gsc-control-cse{font-family:arial, sans-serif}.gsc-control-cse .gsc-table-result{font-family:arial, sans-serif}.gsc-refinementsGradient{background:linear-gradient(to left,rgba(255,255,255,1),rgba(255,255,255,0))}.gsc-control-cse{border-color:#FFFFFF;background-color:#FFFFFF}input.gsc-input,.gsc-input-box,.gsc-input-box-hover,.gsc-input-box-focus{border-color:#D9D9D9}.gsc-search-button-v2,.gsc-search-button-v2:hover,.gsc-search-button-v2:focus{border-color:#5653BD;background-color:#6A67CE;background-image:none;filter:none}.gsc-search-button-v2 svg{fill:#FFFFFF}.gsc-tabHeader.gsc-tabhActive,.gsc-refinementHeader.gsc-refinementhActive{color:#CCCCCC;border-color:#CCCCCC;background-color:#FFFFFF}.gsc-tabHeader.gsc-tabhInactive,.gsc-refinementHeader.gsc-refinementhInactive{color:#CCCCCC;border-color:#CCCCCC;background-color:#FFFFFF}.gsc-webResult.gsc-result,.gsc-results .gsc-imageResult{border-color:#FFFFFF;background-color:#FFFFFF}.gsc-webResult.gsc-result:hover{border-color:#FFFFFF;background-color:#FFFFFF}.gs-webResult.gs-result a.gs-title:link,.gs-webResult.gs-result a.gs-title:link b,.gs-imageResult a.gs-title:link,.gs-imageResult a.gs-title:link b{color:#0000CC}.gs-webResult.gs-result a.gs-title:visited,.gs-webResult.gs-result a.gs-title:visited b,.gs-imageResult a.gs-title:visited,.gs-imageResult a.gs-title:visited b{color:#0000CC}.gs-webResult.gs-result a.gs-title:hover,.gs-webResult.gs-result a.gs-title:hover b,.gs-imageResult a.gs-title:hover,.gs-imageResult a.gs-title:hover b{color:#0000CC}.gs-webResult.gs-result a.gs-title:active,.gs-webResult.gs-result a.gs-title:active b,.gs-imageResult a.gs-title:active,.gs-imageResult a.gs-title:active b{color:#0000CC}.gsc-cursor-page{color:#0000CC}a.gsc-trailing-more-results:link{color:#0000CC}.gs-webResult:not(.gs-no-results-result):not(.gs-error-result) .gs-snippet,.gs-fileFormatType{color:#000000}.gs-webResult div.gs-visibleUrl{color:#008000}.gs-webResult div.gs-visibleUrl-short{color:#008000}.gsc-cursor-box{border-color:#FFFFFF}.gsc-results .gsc-cursor-box .gsc-cursor-page{border-color:#CCCCCC;background-color:#FFFFFF;color:#CCCCCC}.gsc-results .gsc-cursor-box .gsc-cursor-current-page{border-color:#CCCCCC;background-color:#FFFFFF;color:#CCCCCC}.gsc-webResult.gsc-result.gsc-promotion{border-color:#336699;background-color:#FFFFFF}.gsc-completion-title{color:#0000CC}.gsc-completion-snippet{color:#000000}.gs-promotion a.gs-title:link,.gs-promotion a.gs-title:link *,.gs-promotion .gs-snippet a:link{color:#0000CC}.gs-promotion a.gs-title:visited,.gs-promotion a.gs-title:visited *,.gs-promotion .gs-snippet a:visited{color:#0000CC}.gs-promotion a.gs-title:hover,.gs-promotion a.gs-title:hover *,.gs-promotion .gs-snippet a:hover{color:#0000CC}.gs-promotion a.gs-title:active,.gs-promotion a.gs-title:active *,.gs-promotion .gs-snippet a:active{color:#0000CC}.gs-promotion .gs-snippet,.gs-promotion .gs-title .gs-promotion-title-right,.gs-promotion .gs-title .gs-promotion-title-right *{color:#000000}.gs-promotion .gs-visibleUrl,.gs-promotion .gs-visibleUrl-short{color:#008000}.gcsc-find-more-on-google{color:#0000CC}.gcsc-find-more-on-google-magnifier{fill:#0000CC}</style><style type="text/css">.gscb_a{display:inline-block;font:27px/13px arial,sans-serif}.gsst_a .gscb_a{color:#a1b9ed;cursor:pointer}.gsst_a:hover .gscb_a,.gsst_a:focus .gscb_a{color:#36c}.gsst_a{display:inline-block}.gsst_a{cursor:pointer;padding:0 4px}.gsst_a:hover{text-decoration:none!important}.gsst_b{font-size:16px;padding:0 2px;position:relative;user-select:none;-webkit-user-select:none;white-space:nowrap}.gsst_e{vertical-align:middle;opacity:0.55;}.gsst_a:hover .gsst_e,.gsst_a:focus .gsst_e{opacity:0.72;}.gsst_a:active .gsst_e{opacity:1;}.gsst_f{background:white;text-align:left}.gsst_g{background-color:white;border:1px solid #ccc;border-top-color:#d9d9d9;box-shadow:0 2px 4px rgba(0,0,0,0.2);-webkit-box-shadow:0 2px 4px rgba(0,0,0,0.2);margin:-1px -3px;padding:0 6px}.gsst_h{background-color:white;height:1px;margin-bottom:-1px;position:relative;top:-1px}.gsib_a{width:100%;padding:4px 6px 0}.gsib_a,.gsib_b{vertical-align:top}.gssb_c{border:0;position:absolute;z-index:989}.gssb_e{border:1px solid #ccc;border-top-color:#d9d9d9;box-shadow:0 2px 4px rgba(0,0,0,0.2);-webkit-box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:default}.gssb_f{visibility:hidden;white-space:nowrap}.gssb_k{border:0;display:block;position:absolute;top:0;z-index:988}.gsdd_a{border:none!important}.gsq_a{padding:0}.gssb_a{padding:0 7px}.gssb_a,.gssb_a td{white-space:nowrap;overflow:hidden;line-height:22px}#gssb_b{font-size:11px;color:#36c;text-decoration:none}#gssb_b:hover{font-size:11px;color:#36c;text-decoration:underline}.gssb_g{text-align:center;padding:8px 0 7px;position:relative}.gssb_h{font-size:15px;height:28px;margin:0.2em;-webkit-appearance:button}.gssb_i{background:#eee}.gss_ifl{visibility:hidden;padding-left:5px}.gssb_i .gss_ifl{visibility:visible}a.gssb_j{font-size:13px;color:#36c;text-decoration:none;line-height:100%}a.gssb_j:hover{text-decoration:underline}.gssb_l{height:1px;background-color:#e5e5e5}.gssb_m{color:#000;background:#fff}.gssb_a{padding:0 9px}.gsib_a{padding:5px 9px 4px 9px}.gscb_a{line-height:27px}.gssb_e{border:0}.gssb_l{margin:5px 0}input.gsc-input::-webkit-input-placeholder{font-size:14px}input.gsc-input:-moz-placeholder{font-size:14px}input.gsc-input::-moz-placeholder{font-size:14px}input.gsc-input:-ms-input-placeholder{font-size:14px}input.gsc-input:focus::-webkit-input-placeholder{color:transparent}input.gsc-input:focus:-moz-placeholder{color:transparent}input.gsc-input:focus::-moz-placeholder{color:transparent}input.gsc-input:focus:-ms-input-placeholder{color:transparent}.gssb_c .gsc-completion-container{position:static}.gssb_c{z-index:5000}.gsc-completion-container table{background:transparent;font-size:inherit;font-family:inherit}.gssb_c > tbody > tr,.gssb_c > tbody > tr > td,.gssb_d,.gssb_d > tbody > tr,.gssb_d > tbody > tr > td,.gssb_e,.gssb_e > tbody > tr,.gssb_e > tbody > tr > td{padding:0;margin:0;border:0}.gssb_a table,.gssb_a table tr,.gssb_a table tr td{padding:0;margin:0;border:0}</style><style type="text/css">.asc-ads{display: table; margin:0px auto; padding: 25px 0 0 0; text-align: center; position: relative; } .asc-ads:before {display: block; position: absolute;top: 5px; content:"Advertisement";font-size: 12px;font-weight: 400;line-height: 1.2;color: #999;text-transform: uppercase;} @media screen and (max-width: 768px) { .asc-ads-wrapper{background: #f8f8f8; margin: 10px 0px; width: 100%;} .asc-ads { margin:0px auto;} .asc-ads:before { left: 50%; margin-left: -52px;}}</style></head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+<div class="container-fluid">
+<a class="navbar-brand" href="https://www.studytonight.com/">
+<img src="./B+ Trees Data Structure - Studytonight_files/st-logo.webp" style="height: 40px;width: auto" alt="Studytonight.com">
+</a>
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="collapse navbar-collapse" id="navbarSupportedContent">
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+<li class="nav-item">
+<a class="nav-link" href="https://www.studytonight.com/library">
+Tutorials
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://www.studytonight.com/tests">Tests</a>
+</li>
+<li class="nav-item">
+<a class="nav-link text-danger" href="https://www.studytonight.com/studyroom/question"><i class="bi-chat-right-dots me-1"></i>Forum</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://www.studytonight.com/code/playground/">Practice Coding</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://www.studytonight.com/curious">Curious</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://www.studytonight.com/code/html-course/">Learn HTML</a>
+</li>
+</ul>
+<div class="d-flex ms-lg-3 mt-lg-0 mt-2">
+<div id="search-box" class="search-width-lg">
+<script type="text/javascript" async="" src="./B+ Trees Data Structure - Studytonight_files/ga.js"></script><script type="text/javascript" async="" src="./B+ Trees Data Structure - Studytonight_files/f.txt"></script><script>
+            (function() {
+            var cx = "013872321338711154866:maf3hfa7e60";
+            var gcse = document.createElement("script");
+            gcse.type = "text/javascript";
+            gcse.async = true;
+            gcse.src = "https://cse.google.com/cse.js?cx=" + cx;
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(gcse, s);
+            })();
+            window.onload = function()
+            {   
+                var searchBox =  document.getElementById("gsc-i-id1");
+                searchBox.placeholder = "Search Studytonight";
+                searchBox.title = "Search Studytonight";
+            }
+           </script>
+<div id="___gcse_0"><div class="gsc-control-cse gsc-control-cse-en"><div class="gsc-control-wrapper-cse" dir="ltr"><form class="gsc-search-box gsc-search-box-tools" accept-charset="utf-8"><table cellspacing="0" cellpadding="0" class="gsc-search-box"><tbody><tr><td class="gsc-input"><div class="gsc-input-box" id="gsc-iw-id1"><table cellspacing="0" cellpadding="0" id="gs_id50" class="gstl_50 gsc-input" style="width: 100%; padding: 0px;"><tbody><tr><td id="gs_tti50" class="gsib_a"><input autocomplete="off" type="text" size="10" class="gsc-input" name="search" title="Search Studytonight" id="gsc-i-id1" dir="ltr" spellcheck="false" style="width: 100%; padding: 0px; border: none; margin: -0.0625em 0px 0px; height: 1.25em; background: url(&quot;https://www.google.com/cse/static/images/1x/en/branding.png&quot;) left center no-repeat rgb(255, 255, 255); outline: none;" placeholder="Search Studytonight"></td><td class="gsib_b"><div class="gsst_b" id="gs_st50" dir="ltr"><a class="gsst_a" href="javascript:void(0)" title="Clear search box" role="button" style="display: none;"><span class="gscb_a" id="gs_cb50" aria-hidden="true">×</span></a></div></td></tr></tbody></table></div></td><td class="gsc-search-button"><button class="gsc-search-button gsc-search-button-v2"><svg width="13" height="13" viewBox="0 0 13 13"><title>search</title><path d="m4.8495 7.8226c0.82666 0 1.5262-0.29146 2.0985-0.87438 0.57232-0.58292 0.86378-1.2877 0.87438-2.1144 0.010599-0.82666-0.28086-1.5262-0.87438-2.0985-0.59352-0.57232-1.293-0.86378-2.0985-0.87438-0.8055-0.010599-1.5103 0.28086-2.1144 0.87438-0.60414 0.59352-0.8956 1.293-0.87438 2.0985 0.021197 0.8055 0.31266 1.5103 0.87438 2.1144 0.56172 0.60414 1.2665 0.8956 2.1144 0.87438zm4.4695 0.2115 3.681 3.6819-1.259 1.284-3.6817-3.7 0.0019784-0.69479-0.090043-0.098846c-0.87973 0.76087-1.92 1.1413-3.1207 1.1413-1.3553 0-2.5025-0.46363-3.4417-1.3909s-1.4088-2.0686-1.4088-3.4239c0-1.3553 0.4696-2.4966 1.4088-3.4239 0.9392-0.92727 2.0864-1.3969 3.4417-1.4088 1.3553-0.011889 2.4906 0.45771 3.406 1.4088 0.9154 0.95107 1.379 2.0924 1.3909 3.4239 0 1.2126-0.38043 2.2588-1.1413 3.1385l0.098834 0.090049z"></path></svg></button></td><td class="gsc-clear-button"><div class="gsc-clear-button" title="clear results">&nbsp;</div></td></tr></tbody></table></form><div class="gsc-results-wrapper-overlay"><div class="gsc-results-close-btn" tabindex="0"></div><div class="gsc-positioningWrapper"><div class="gsc-tabsAreaInvisible"><div aria-label="refinement" role="tab" class="gsc-tabHeader gsc-inline-block gsc-tabhActive">Custom Search</div><span class="gs-spacer"> </span></div></div><div class="gsc-positioningWrapper"><div class="gsc-tabsAreaInvisible"></div></div><div class="gsc-above-wrapper-area-invisible"><table cellspacing="0" cellpadding="0" class="gsc-above-wrapper-area-container"><tbody><tr><td class="gsc-result-info-container"><div class="gsc-result-info-invisible"></div></td><td class="gsc-orderby-container"><div class="gsc-orderby-invisible"><div class="gsc-orderby-label gsc-inline-block">Sort by:</div><div class="gsc-option-menu-container gsc-inline-block"><div class="gsc-selected-option-container gsc-inline-block"><div class="gsc-selected-option">Relevance</div><div class="gsc-option-selector"></div></div><div class="gsc-option-menu-invisible"><div class="gsc-option-menu-item gsc-option-menu-item-highlighted"><div class="gsc-option">Relevance</div></div><div class="gsc-option-menu-item"><div class="gsc-option">Date</div></div></div></div></div></td></tr></tbody></table></div><div class="gsc-adBlockInvisible"></div><div class="gsc-wrapper"><div class="gsc-adBlockInvisible"></div><div class="gsc-resultsbox-invisible"><div class="gsc-resultsRoot gsc-tabData gsc-tabdActive"><div><div class="gsc-expansionArea"></div></div></div></div></div></div><div class="gsc-modal-background-image" tabindex="0"></div></div></div></div>
+</div>
+</div>
+<div class="d-flex ms-lg-3 mt-lg-0 mt-2">
+<a href="https://www.studytonight.com/login" class="btn btn-outline-primary btn-md" type="submit">Login</a>
+</div>
+</div>
+</div>
+</nav><div class="container-fluid bg-light"><div class="row p-2"><div class="col-lg-2 col-sm-9" style="min-height: 0;">
+<div class="mobile-sidebar-button fixed">
+<a id="slide-in-sidebar" class="btn btn-primary btn-lg">
+<span><i class="bi-arrow-right-circle-fill text-danger"></i> Index</span>
+</a>
+</div>
+<div id="sidebar-sliding-menu">
+<div id="left-sidebar" class="p-lg-0 p-sm-2">
+<div class="d-block d-lg-none">
+<i id="close-sidebar" class="bi-x-square-fill float-end fs-4 text-danger"></i>
+<div class="fw-light" style="margin:0 0 0.4em 0.6em;">Studytonight available on: </div>
+<span title="Subscribe to Studytonight Youtube Channel" class="mx-3"><a href="https://www.youtube.com/c/Studytonight" target="_blank"><i class="bi-youtube fs-3 me-1"></i>Youtube</a></span>
+<span title="Download Studytonight Android App"><a href="https://play.google.com/store/apps/details?id=com.studytonight.app" target="_blank"><img src="./B+ Trees Data Structure - Studytonight_files/google-play-icon.webp" alt="Download Studytonight Android App" style="width:100px;height:auto;"></a></span>
+<hr>
+</div>
+
+<ul class="sidebar-list" id="tutLeftSidebar"><li class="main"><h4>Advanced Trees <i class="bi-chevron-up"></i></h4><ul class="sidebar-sublist open"><li> <a href="https://www.studytonight.com/advanced-data-structures/nary-tree">N-ary Tree</a> </li><li> <a href="https://www.studytonight.com/advanced-data-structures/avl-tree">AVL Tree Data</a> </li><li> <a href="https://www.studytonight.com/advanced-data-structures/heap">Heap Data Structure</a> </li><li> <a href="https://www.studytonight.com/advanced-data-structures/implementing-heaps">Implementing Heaps</a> </li><li> <a href="https://www.studytonight.com/advanced-data-structures/trie-data-structure-explained-with-examples">Trie</a> </li><li> <a href="https://www.studytonight.com/advanced-data-structures/b-trees-mway-trees-data-structure">B Trees (M-way Tree)</a> </li><li class="active"> <a href="https://www.studytonight.com/advanced-data-structures/b-plus-trees-data-structure">B+ Trees</a> </li></ul></li><li class="main"><h4>Graphs <i class="bi-chevron-down"></i></h4><ul class="sidebar-sublist closed"><li> <a href="https://www.studytonight.com/advanced-data-structures/introduction-to-graphs">Introduction to Graphs</a> </li><li> <a href="https://www.studytonight.com/advanced-data-structures/graph-representations-adjacency-matrix-and-list">Graph Representations</a> </li></ul></li><li class="main"><h4>Others <i class="bi-chevron-down"></i></h4><ul class="sidebar-sublist closed"><li> <a href="https://www.studytonight.com/advanced-data-structures/hash-table-data-structure">Hash Table</a> </li></ul></li></ul> </div>
+</div>
+
+<div class="d-md-block d-none mb-3">
+<div class="scroller_anchor"></div>
+<div class="scroller" style="position: relative; top: 0px;">
+
+<div data-ad="LeftSidebar" id="asc-LeftSidebar-4nzdJ51" data-sizes="[[160,600]]" class="asc-ads"><script type="text/javascript"> googletag.cmd.push(function() { googletag.display('asc-LeftSidebar-4nzdJ51');});</script></div>
+</div> </div>
+</div><div class="col-lg-7 col-sm-12 p-3 bg-white shadow-sm mb-3"><div id="body-content" class="fs-5"><article><h1>B+ Trees Data Structure</h1><style>.layout_size{min-height: 110px;overflow: hidden;margin-bottom:10px;} @media (max-width: 550px) { .layout_size {min-height: 320px; min-width: inherit; } }
+</style>
+<div class="layout_size"><div data-ad="TopNav" id="asc-TopNav-YnpRy51" data-sizes="[[728,90]]" class="asc-ads"><script type="text/javascript"> googletag.cmd.push(function() { googletag.display('asc-TopNav-YnpRy51');});</script></div></div><p>A <strong>B+ tree</strong> is an extension of a B tree which makes the search, insert and delete operations more efficient. We know that B trees allow both the data pointers and the key values in internal nodes as well as leaf nodes, this certainly becomes a drawback for B trees as the ability to insert the nodes at a particular level is decreased thus increase the node levels in it, which is certainly of no good. B+ trees reduce this drawback by simply <strong>storing the data pointers at the leaf node level</strong> and only storing the key values in the internal nodes. It should also be noted that the nodes at the leaf level are linked with each other, hence making the traversal of the data pointers easy and more efficient.</p>
+<p>B+ trees come in handy when we want to store <strong>a large amount of data</strong> in the main memory. Since we know that the size of the main memory is not that large, so make use of the B+ trees, whose internal nodes that store the key(to access the records) are stored in the main memory whereas, the leaf nodes that contain the data pointers are actually stored in the secondary memory.</p>
+<p>A pictorial representation of a B+ tree is given below:</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608306929-76844.png" style="height: 232px; width: 800px;" title=""></p>
+<h2>Why B+ trees?</h2>
+<ul>
+<li>
+<p>B+ trees store the records which later can be fetched in an equal number of disk accesses.</p>
+</li>
+<li>
+<p>The height of the B+ tree <strong>remains balanced</strong> and very less as when compared to B trees even if the number of records store in them is the same.</p>
+</li>
+<li>
+<p>Having less number of levels makes the accessing of records very easy.</p>
+</li>
+<li>
+<p>As the leaf nodes are connected with each other <strong>like a linked list</strong>, we can easily search elements in sequential manners.</p>
+</li>
+</ul>
+<h2>Inserting in B+ tree</h2>
+<ul>
+<li>
+<p>Perform a search operation in the B+ tree to check the <strong>ideal bucket location</strong> where this new node should go to.</p>
+</li>
+<li>
+<p>If the bucket is not full( does not violate the B+ tree property ), then add that node into this bucket.</p>
+</li>
+<li>
+<p>Otherwise split the nodes into two nodes and push the middle node( median node to be precise ) to the parent node and then insert the new node.</p>
+</li>
+<li>
+<p>Repeat the above steps if the parent node is there and the current node keeps getting full.</p>
+</li>
+</ul>
+<p>Consider the pictorial representations shown below to understand the Insertion operation in the B+ tree:</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608912327-.png" style="height: 388px; width: 800px;" title=""><div class="text-center"><div data-ad="InContent" id="asc-InContent-PuRsj51" data-sizes="[[336,280],[300,250]]" class="asc-ads"><script type="text/javascript"> googletag.cmd.push(function() { googletag.display('asc-InContent-PuRsj51');});</script></div></div></p>
+<p>Let us try to insert 57 inside the above-shown B+ tree, the resultant B+ tree will look like this:</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608912438-.png" style="height: 399px; width: 800px;" title=""></p>
+<p>We know that the bucket(node) where we inserted the key with value 57 is now violating the property of the B+ tree, hence we need to split this node as mentioned in the steps above. After splitting we will push the median node to the parent node, and the resulting B+ tree will look like this:</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608912568-.png" style="height: 298px; width: 800px;" title=""></p>
+<h2>Searching in B+ tree:</h2>
+<p>Searching in a B+ tree is similar to searching in a BST. If the current value is less than the searching key, then traverse the left subtree, and if greater than first traverse this current bucket(node) and then check where the ideal location is.</p>
+<p>Consider the below representation of a B+ tree to understand the searching procedure. Suppose we want to search for a key with a value equal to 59 in the below given B+ tree.</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608913702-76844.png" style="height:331px; width:800px"></p>
+<p>Now we know that 59 &lt; 69, hence we traverse the left subtree.</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608914361-76844.png" style="height:294px; width:800px"></p>
+<p>Now we have found the internal pointer that will point us to our required search value.</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608914439-76844.png" style="height: 350px; width: 800px;" title=""></p>
+<p>Finally, we traverse this bucket in a linear fashion to get to our required search value.</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608914977-76844.png" style="height: 350px; width: 800px;" title=""></p>
+<h2>Deletion in B+ tree:</h2>
+<p>Deletion is a bit complicated process, two case arises:<div class="text-center"><div data-ad="InContent" id="asc-InContent-qbco651" data-sizes="[[336,280],[300,250]]" class="asc-ads"><script type="text/javascript"> googletag.cmd.push(function() { googletag.display('asc-InContent-qbco651');});</script></div></div></p>
+<ul>
+<li>
+<p>It is only present at the <strong>leaf level</strong></p>
+</li>
+<li>
+<p>or, it contains a pointer from an internal node also.</p>
+</li>
+</ul>
+<h3>Deletion of only the leaf-node:</h3>
+<p>If it is present only as a <strong>leaf node position</strong>, then we can simply delete it, for which we first do the search operation and then delete it.</p>
+<p>Consider the pictorial representation shown below:</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608916081-76844.png" style="height: 348px; width: 800px;" title=""></p>
+<p>After the deletion of 79, we are left with the following B+ tree.</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608916131-76844.png" style="height: 366px; width: 800px;" title=""></p>
+<h3>Deletion if a pointer to a leaf node is there:</h3>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608916809-76844.png" style="height: 372px; width: 800px;" title=""></p>
+<p>After we locate the node we want to delete we must also delete the internal pointer that points to this node, and then we finally need to move the next node pointer to move to the parent node.</p>
+<p style="text-align: center;"><img alt="B+ trees data structure" src="./B+ Trees Data Structure - Studytonight_files/1608916888-76844.png" style="height: 329px; width: 800px;" title=""></p>
+<h2>Conclusion:</h2>
+<ul>
+<li>
+<p>We learned what a B+ tree is, and how it is different from a B tree.</p>
+</li>
+<li>
+<p>Then we learned why we need a B+ tree.</p>
+</li>
+<li>
+<p>Lastly, we learned different operations that we do on a B+ tree-like searching, Insertion, and deletion of a record(key).</p>
+</li>
+</ul>
+</article><hr><div><ul class="pager"><li class="previous"><a href="https://www.studytonight.com/advanced-data-structures/b-trees-mway-trees-data-structure">← Prev</a></li><li class="next"><a href="https://www.studytonight.com/advanced-data-structures/introduction-to-graphs">Next →</a></li></ul></div><hr>
+<div class="center" style="min-height: 300px;overflow: auto;">
+
+<div data-ad="BelowContent" id="asc-BelowContent-2ni5Z51" data-sizes="[[336,280],[300,250]]" class="asc-ads"><script type="text/javascript"> googletag.cmd.push(function() { googletag.display('asc-BelowContent-2ni5Z51');});</script></div>
+</div></div></div><div class="col-lg-3 col-sm-12">
+<div class="bg-white mb-3 mt-1 p-3 border-danger border-start border-5">
+<a href="https://www.studytonight.com/tests/">
+<h4 class="fw-light"><i class="bi-ui-checks"></i>&nbsp; Interview Tests</h4>
+<div class="mt-2 text-dark">repare for your next Interview.</div>
+</a>
+</div>
+<div class="d-md-block d-none">
+<div>
+<div class="text-center">
+<div data-ad="RightSidebar_Top" id="asc-RightSidebar_Top-nqP0Q51" data-sizes="[[300,250]]" class="asc-ads"><script type="text/javascript"> googletag.cmd.push(function() { googletag.display('asc-RightSidebar_Top-nqP0Q51');});</script></div>
+<div class="mt-3">
+<div class="scroller_anchor_right"></div>
+<div class="scroller_right" style="position: relative; top: 0px;">
+<div data-ad="RightSidebar_Bottom" id="asc-RightSidebar_Bottom-jJCt351" data-sizes="[[300,250]]" class="asc-ads"><script type="text/javascript"> googletag.cmd.push(function() { googletag.display('asc-RightSidebar_Bottom-jJCt351');});</script></div>
+</div>
+</div>
+</div></div>
+</div>
+</div></div></div>
+<footer class="text-light pt-5" style="background: #4534aa">
+<div class="container-fluid back-dark-footer pb-5">
+<div class="float-end mb-1">
+<a href="https://www.studytonight.com/advanced-data-structures/b-plus-trees-data-structure#" class="btn btn-warning"><i class="bi-chevron-up"></i></a>
+</div>
+<div class="row px-4">
+<div class="col-lg-4 col-md-7 col-sm-12 p-2">
+<h2 class="fw-light">studytonight.com&nbsp;<sup title="Verified Profile"><i class="bi-patch-check-fill text-danger"></i></sup></h2>
+<p class="fw-light">© 2021 Studytonight Technologies Pvt. Ltd.</p>
+<p><a class="text-light" href="https://www.studytonight.com/about">About Us</a></p>
+<p><a class="text-light" href="https://www.studytonight.com/testimonials">Testimonials</a></p>
+<p><a class="text-light" href="https://www.studytonight.com/authors">Authors</a></p>
+<p><a class="text-light" href="https://www.studytonight.com/collaborate">Collaborate</a></p>
+<p><a class="text-light" href="https://www.studytonight.com/privacy">Privacy Policy</a></p>
+<p><a class="text-light" href="https://www.studytonight.com/terms">Terms</a></p>
+<p><a class="text-light" href="https://www.studytonight.com/contact">Contact Us</a></p>
+<p><a class="text-light" href="https://www.studytonight.com/suggest">Suggest</a></p>
+</div>
+<div class="col-lg-3 col-md-5 col-sm-12 p-2">
+<a href="https://www.studytonight.com/library">
+<div class="bg-primary-light p-2 mt-2 mb-3 text-dark rounded-3 shadow">
+<div class="fs-5"><i class="bi-book-half text-danger"></i> &nbsp;Tutorials</div>
+</div>
+</a>
+<a href="https://www.studytonight.com/tests">
+<div class="bg-primary-light p-2 mt-2 mb-3 text-dark rounded-3 shadow">
+<div class="fs-5"><i class="bi-ui-checks text-danger"></i> &nbsp;Tests</div>
+</div>
+</a>
+<a href="https://www.studytonight.com/curious">
+<div class="bg-primary-light p-2 mt-2 mb-3 text-dark rounded-3 shadow">
+<div class="fs-5"><i class="bi-hash text-danger"></i> &nbsp;Curious</div>
+</div>
+</a>
+<a href="https://www.studytonight.com/code/playground/">
+<div class="bg-primary-light p-2 mt-2 mb-3 text-dark rounded-3 shadow">
+<div class="fs-5"><i class="bi-terminal-fill text-danger"></i> &nbsp;Practice Coding</div>
+</div>
+</a>
+<a href="https://www.studytonight.com/educators/">
+<div class="bg-primary-light p-2 mt-2 mb-3 text-dark rounded-3 shadow">
+<div class="fs-5"><i class="bi-person-check-fill text-danger"></i> &nbsp;Educators Program</div>
+</div>
+</a>
+</div>
+<div class="col-lg-3 col-md-12 col-sm-12 mx-auto">
+<p><a href="https://www.facebook.com/Studytonight" target="_blank" class="text-white"><i class="bi-facebook fs-2 text-warning"></i>&nbsp;&nbsp;<span class="fs-5 fw-light">Studytonight</span></a></p><a href="https://www.facebook.com/Studytonight" target="_blank" class="text-white">
+</a><p><a href="https://www.facebook.com/Studytonight" target="_blank" class="text-white"></a><a href="https://www.instagram.com/study.tonight" target="_blank" class="text-white"><i class="bi-instagram fs-2 text-warning"></i>&nbsp;&nbsp;<span class="fs-5 fw-light">@study.tonight</span></a></p><a href="https://www.instagram.com/study.tonight" target="_blank" class="text-white">
+</a><p><a href="https://www.instagram.com/study.tonight" target="_blank" class="text-white"></a><a href="https://www.linkedin.com/company/studytonight" target="_blank" class="text-white"><i class="bi-linkedin fs-2 text-warning"></i>&nbsp;&nbsp;<span class="fs-5 fw-light">Studytonight</span></a></p><a href="https://www.linkedin.com/company/studytonight" target="_blank" class="text-white">
+</a><p><a href="https://www.linkedin.com/company/studytonight" target="_blank" class="text-white"></a><a href="https://www.twitter.com/studytonight" target="_blank" class="text-white"><i class="bi-twitter fs-2 text-warning"></i>&nbsp;&nbsp;<span class="fs-5 fw-light">@studytonight</span></a></p><a href="https://www.twitter.com/studytonight" target="_blank" class="text-white">
+</a><p><a href="https://www.twitter.com/studytonight" target="_blank" class="text-white"></a><a href="https://www.youtube.com/c/Studytonight" target="_blank" class="text-white"><i class="bi-youtube fs-2 text-warning"></i>&nbsp;&nbsp;<span class="fs-5 fw-light">Studytonight</span></a></p><a href="https://www.youtube.com/c/Studytonight" target="_blank" class="text-white">
+</a></div><a href="https://www.youtube.com/c/Studytonight" target="_blank" class="text-white">
+</a></div><a href="https://www.youtube.com/c/Studytonight" target="_blank" class="text-white">
+</a></div><a href="https://www.youtube.com/c/Studytonight" target="_blank" class="text-white">
+</a></footer><a href="https://www.youtube.com/c/Studytonight" target="_blank" class="text-white">
+<script async="" defer="" src="./B+ Trees Data Structure - Studytonight_files/bootstrap.v3.min.1613456911.js"></script>
+<script src="./B+ Trees Data Structure - Studytonight_files/jquery.1610296753.js"></script>
+
+<script type="text/javascript" defer="" src="./B+ Trees Data Structure - Studytonight_files/asc_prebid.1617712016.js"></script>
+
+
+<script>$(document).ready(function(){ let matched = $("#body-content p"); if(matched.length>10 && matched.length<20){ if(screen.width < 768) { let count1 = Math.floor(matched.length/3); let count2 = Math.floor((matched.length*2)/3); let el = document.getElementById("body-content"); let pth = $(el).find('p'); $(pth).eq(count1).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); $(pth).eq(count2).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); }else{ let count = Math.floor(matched.length/3); let el = document.getElementById("body-content"); let pth = $(el).find('p'); $(pth).eq(count).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); } } if(matched.length>20){ if(screen.width < 768) { let count1 = Math.floor(matched.length/4); let count2 = Math.floor((matched.length*2)/4); let count3 = Math.floor((matched.length*3)/4); let el = document.getElementById("body-content"); let pth = $(el).find('p'); $(pth).eq(count1).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); $(pth).eq(count2).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); $(pth).eq(count3).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); } else{ let count1 = Math.floor(matched.length/3); let count2 = Math.floor((matched.length*2)/3); let el = document.getElementById("body-content"); let pth = $(el).find('p'); $(pth).eq(count1).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); $(pth).eq(count2).append(`<div class="text-center"><div data-ad='InContent'></div></div>`); } } });
+</script>
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-39722043-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+<script src="./B+ Trees Data Structure - Studytonight_files/sidebar.v2.min.1617714487.js"></script>
+<script src="./B+ Trees Data Structure - Studytonight_files/prism.1610296753.js"></script>
+<script src="./B+ Trees Data Structure - Studytonight_files/split.min.1610296753.js"></script>
+</a><table cellspacing="0" cellpadding="0" class="gstl_50 gssb_c" style="width: 202px; display: none; top: 47px; position: absolute; left: 1091px;"><tbody><tr><td class="gssb_f"></td><td class="gssb_e" style="width: 100%;"></td></tr></tbody></table></body><iframe sandbox="allow-scripts allow-same-origin" id="47a105babe4a262" frameborder="0" allowtransparency="true" marginheight="0" marginwidth="0" width="0" hspace="0" vspace="0" height="0" style="height:0px;width:0px;display:none;" scrolling="no" src="./B+ Trees Data Structure - Studytonight_files/ixmatch.html">
+    </iframe><iframe sandbox="allow-scripts allow-same-origin" id="489699e1ba76863" frameborder="0" allowtransparency="true" marginheight="0" marginwidth="0" width="0" hspace="0" vspace="0" height="0" style="height:0px;width:0px;display:none;" scrolling="no" src="./B+ Trees Data Structure - Studytonight_files/async_usersync.html">
+    </iframe><iframe sandbox="allow-scripts allow-same-origin" id="49ab7c5739c02fa" frameborder="0" allowtransparency="true" marginheight="0" marginwidth="0" width="0" hspace="0" vspace="0" height="0" style="height:0px;width:0px;display:none;" scrolling="no" src="./B+ Trees Data Structure - Studytonight_files/showad.html">
+    </iframe><iframe sandbox="allow-scripts allow-same-origin" id="5072d1a09e68118" frameborder="0" allowtransparency="true" marginheight="0" marginwidth="0" width="0" hspace="0" vspace="0" height="0" style="height:0px;width:0px;display:none;" scrolling="no" src="./B+ Trees Data Structure - Studytonight_files/pd.html">
+    </iframe><div style="padding: 0px; margin: 3px 3px 20px; background: padding-box padding-box rgb(248, 248, 255); border: 3px solid rgba(242, 242, 242, 0.6); border-radius: 2px; box-shadow: rgb(102, 102, 102) 0px 0px 2px; visibility: visible; display: none; z-index: 2147483647; inset: 12px auto auto 16px; width: 0px; height: 0px; position: fixed !important; box-sizing: content-box !important; max-width: none !important; max-height: none !important;"><img alt="" style="display: block; background: none; position: relative; width: 100%; height: 100%; max-width: inherit; max-height: inherit; margin: 0px; padding: 0px; border: 0px; visibility: inherit !important; image-orientation: initial !important;"><video poster="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=" autoplay="" style="display: none; background: none; position: relative; width: 100%; height: 100%; max-width: inherit; max-height: inherit; margin: 0px; padding: 0px; border: 0px; box-shadow: rgb(241, 101, 41) 0px 0px 0px 1px; visibility: inherit !important;"></video><div style="left: 0px; right: auto; display: none; cursor: default; position: absolute; width: auto; height: auto; border: 0px; white-space: nowrap; font: 13px / 1.4em &quot;Trebuchet MS&quot;, sans-serif; box-shadow: rgb(221, 221, 221) 0px 0px 1px inset; padding: 0px 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.75) !important; color: rgb(255, 255, 255) !important; top: -18px;"><b style="display: none; transition: background-color 0.1s ease 0s; border-radius: 3px; padding: 0px 2px;"></b> <b style="display: none;"></b> <span style="color: inherit; display: inline;">B+ trees data structure</span></div></div><img alt="" draggable="false" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOng9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBub25lIj48Zz48cGF0aCBpZD0icCIgZD0iTTMzIDQyYTEgMSAwIDAgMSA1NS0yMCAzNiAzNiAwIDAgMC01NSAyMCIvPjx1c2UgeDpocmVmPSIjcCIgdHJhbnNmb3JtPSJyb3RhdGUoNzIgNTAgNTApIi8+PHVzZSB4OmhyZWY9IiNwIiB0cmFuc2Zvcm09InJvdGF0ZSgxNDQgNTAgNTApIi8+PHVzZSB4OmhyZWY9IiNwIiB0cmFuc2Zvcm09InJvdGF0ZSgyMTYgNTAgNTApIi8+PHVzZSB4OmhyZWY9IiNwIiB0cmFuc2Zvcm09InJvdGF0ZSgyODggNTAgNTApIi8+PGFuaW1hdGVUcmFuc2Zvcm0gYXR0cmlidXRlTmFtZT0idHJhbnNmb3JtIiB0eXBlPSJyb3RhdGUiIHZhbHVlcz0iMzYwIDUwIDUwOzAgNTAgNTAiIGR1cj0iMS44cyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiLz48L2c+PC9zdmc+" style="padding: 5px; background-clip: padding-box; width: 38px; height: 38px; z-index: 2147483647; display: none; inset: auto; margin: 0px; transition: background-color 0.5s ease 0s, opacity 0.2s ease 0s, top 0.15s ease-out 0s, left 0.15s ease-out 0s; border-radius: 50% !important; box-shadow: rgb(166, 166, 166) 0px 0px 5px 1px !important; position: fixed !important; box-sizing: border-box !important; opacity: 0; background-color: rgb(255, 255, 255);"></html>
