@@ -21,7 +21,7 @@ using namespace std;
 
 	B+ 树的性质
 		1. All leaves are at the same level.
-		2. The root has at least two children.
+		2. The root has at least two children.	(这里根节点只有 1 个 key)
 		3. Each node except root can have a maximum of m children and at least m/2 children.
 		4. Each node can contain a maximum of m - 1 keys and a minimum of ⌈m/2⌉ - 1 keys.
  */
@@ -30,16 +30,15 @@ using namespace std;
 
 class Node {
 public:
-	Node(): is_leaf(false), size(0), key(nullptr), children_or_sibling(nullptr) {
-		key = new int[MAX];
-		children_or_sibling = new Node*[MAX+1];
+	Node(): is_leaf(false), size(0) {
+		memset(children_or_sibling, 0, sizeof(children_or_sibling));
 	}
 
 private:
 	bool is_leaf;
-	int* key;						// all keys
-	int size;						// valid keys size
-	Node** children_or_sibling;		// 如果是中间节点，那这个就是children; 如果是叶子节点，那这个就是 sibling
+	int key[MAX];						// all keys
+	int size;							// valid keys size
+	Node* children_or_sibling[MAX+1];	// 如果是中间节点，那这个就是children; 如果是叶子节点，那这个就是 sibling
 
 	friend class BPlusTree;
 };
@@ -59,6 +58,7 @@ public:
 private:
 	void _InsertInternal(int x, Node* p_parent, Node* p_child);
 	Node* _FindParent(Node* p_cursor, Node* p_child);
+	void _RemoveInternal(int x, Node* p_cursor, Node* p_child);
 
 private:
 	Node* _root;

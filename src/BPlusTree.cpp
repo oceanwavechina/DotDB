@@ -140,12 +140,15 @@ void BPlusTree::Insert(int x)
 				cout << "create new node" << endl;
 
 			} else {
+				//	这里的递归调用是自下而上的分列的，
+				//		最下边的先分类，多出来的，放到中坚层
+				//		中间层需要的话，在继续分列然后向上传递
 				_InsertInternal(p_new_leaf->key[0], p_parent, p_new_leaf);
 			}
 
-		}
+		}	/* if(p_cursor_node->size < MAX) */
 
-	}
+	}	/* if(!_root) */
 }
 
 bool BPlusTree::Search(int x)
@@ -200,7 +203,207 @@ bool BPlusTree::Search(int x)
 	return found;
 }
 
-void BPlusTree::Remove(int x) {
+void BPlusTree::Remove(int x)
+{
+	if(!_root) {
+		return;
+	}
+
+	cout << "prepare remove: " << x;
+
+	Node* p_cursor_node = _root;
+	Node* p_parent = nullptr;
+	int left_sibling, right_sibling;
+
+	// 1. 先尝试找到包含 x 的那个叶子节点
+	while(!p_cursor_node->is_leaf) {
+
+		for(int i=0; i<p_cursor_node->size; ++i) {
+			p_parent = p_cursor_node;
+			left_sibling = i-1;
+			right_sibling = i+1;
+
+			if(x < p_cursor_node->key[i]) {
+				p_cursor_node = p_cursor_node->children_or_sibling[i];
+				break;
+			}
+
+			if(i == p_cursor_node->size - 1) {
+				left_sibling = i;
+				right_sibling = i+2;
+				p_cursor_node = p_cursor_node->children_or_sibling[i+1];
+				break;
+			}
+		}
+	}
+
+	// 2. 看看这个叶子节点是否真的包含 x
+	int target_pos = -1;
+	for(int pos=0; pos<p_cursor_node->size; ++pos) {
+		if(p_cursor_node->key[pos] == x) {
+			target_pos = pos;
+			break;
+		}
+	}
+	if(!target_pos == -1) {
+		cout << "not found" << endl;
+	}
+
+	// 3. 先从叶子节点上 删除这个key
+	for(int i=target_pos; i<p_cursor_node->size; ++i) {
+		p_cursor_node->key[i] = p_cursor_node->key[i+1];
+	}
+	p_cursor_node->size -= 1;
+
+	// 根节点的特殊处理
+	if(p_cursor_node == _root) {
+		//
+		// 	说一下为什么指针都置空:
+		//		当 根节点 是 叶子节点 的时候, 他的孩子节点自然后不存在
+		//
+		for(int i=0; i<MAX+1; ++i) {
+			p_cursor_node->children_or_sibling[i] = nullptr;
+		}
+		if(p_cursor_node->size == 0) {
+			cout << "tree died" << endl;
+			delete p_cursor_node;
+			_root = nullptr;
+		}
+	}
+
+	// 处理叶子节点链表的串联关系
+	p_cursor_node->children_or_sibling[p_cursor_node->size] = p_cursor_node->children_or_sibling[p_cursor_node->size + 1];
+	p_cursor_node->children_or_sibling[p_cursor_node->size + 1] = nullptr;
+
+	if(p_cursor_node->size >= (MAX+1) / 2) {
+		// 这里是一个node要包含的最少的key的个数
+		// 少于这个数值就要合并了
+		return;
+	}
+
+	/*
+	  如下图所示，children 比 key 要多一个
+
+					  k1 | k2 | k3 | k4 | k5
+				    /    |    |    |    |    \
+				  ch0   ch1  ch2  ch3  ch4   ch5
+	*/
+
+	// 以下是合并 **叶子** 节点
+	// 合并的原则是从右往左合并
+	// 		left  <--  cursor  <--  right
+
+	if(left_sibling >= 0) {
+		// 要是左边兄弟的节点多，就从左边兄弟拿一个过来
+		// 这里多的判断是 >= (MAX+1) / 2 + 1
+
+		Node* p_left_node = p_parent->children_or_sibling[left_sibling];
+
+		if(p_left_node->size >= (MAX+1) / 2 + 1) {
+
+			// 从左边拿过来的那个 key，肯定是要放到 key[0] 的位置的
+			for(int i=p_cursor_node->size; i>0; --i) {
+				p_cursor_node->key[i] = p_cursor_node->key[i-1];
+			}
+
+			p_cursor_node->size += 1;
+			// 注意这里 children_or_sibling 实际上是 sibling，因为我们此案在处理的是叶子节点
+			p_cursor_node->children_or_sibling[p_cursor_node->size] = p_cursor_node->children_or_sibling[p_cursor_node->size-1];
+			p_cursor_node->children_or_sibling[p_cursor_node->size-1] = nullptr;
+
+			// 开始从左边兄弟节点转移数据
+			p_cursor_node->children_or_sibling[0] = p_left_node->children_or_sibling[p_left_node->size-1];
+			p_left_node->size -= 1;
+			p_left_node->children_or_sibling[p_left_node->size] = p_cursor_node;
+			p_left_node->children_or_sibling[p_left_node->size+1] = nullptr;
+
+			// 更新 parent
+			p_parent->key[left_sibling] = p_cursor_node->key[0];
+
+			cout << "transfer " << p_cursor_node->key[0] << "from left sibling of leaf node" << endl;
+
+			return ;
+		}
+	}
+
+	if(right_sibling <= p_parent->size) {
+		// 因为这里的 right_sibling 是 parent 中 children 的 pos
+		// 所以要跟 parent 的 size 比较
+		// 要是右边兄弟的节点多，就从右边兄弟拿一个过来
+
+		/*
+		  如下图所示，children 比 key 要多一个
+
+						     parent
+					    /             \
+				    left -> cursor -> right
+		*/
+
+		Node* p_right_node = p_parent->children_or_sibling[right_sibling];
+
+		if(p_right_node->size >= (MAX+1) / 2 + 1) {
+
+			// 修改链表, cursor 多了一个元素，所以
+			p_cursor_node->size += 1;
+			p_cursor_node->children_or_sibling[p_cursor_node->size] = p_cursor_node->children_or_sibling[p_cursor_node->size - 1];
+			p_cursor_node->children_or_sibling[p_cursor_node->size-1] = nullptr;
+
+			// 从右边转移一个到cursor
+			p_cursor_node->key[p_cursor_node->size-1] = p_right_node->key[0];
+
+			// 现在 right_node 的 key 和 children 都变了，要重新移动
+			p_right_node->size -= 1;
+			p_right_node->children_or_sibling[p_right_node->size] = p_right_node->children_or_sibling[p_right_node->size+1];
+			p_right_node->children_or_sibling[p_right_node->size+1] = nullptr;
+			for(int i=0; i< p_right_node->size; ++i) {
+				p_right_node->key[i] = p_right_node->key[i+1];
+			}
+
+			// 更新父节点
+			p_parent->key[right_sibling-1] = p_right_node->key[0];
+
+			cout << "transfer " << p_cursor_node->key[p_cursor_node->size-1] << "from right sibling of leaf node" << endl;
+
+			return ;
+		}
+	}
+
+	// 下边的要合并和删除节点了
+	if(left_sibling >= 0) {
+		// 把 cursor 中的所有元素都转移到 left_node 中
+		// 然后把 cursor node 删除
+
+		Node* p_left_node = p_parent->children_or_sibling[left_sibling];
+
+		for(int i=p_left_node->size, j=0; j< p_cursor_node->size; ++i, ++j) {
+			p_left_node->key[i] = p_cursor_node->key[j];
+		}
+		p_left_node->children_or_sibling[p_left_node->size] = nullptr;
+		p_left_node->size += p_cursor_node->size;
+		p_left_node->children_or_sibling[p_left_node->size] = p_cursor_node->children_or_sibling[p_cursor_node];
+
+		_RemoveInternal(p_parent->key[left_sibling], p_parent, p_cursor_node);
+
+		delete p_cursor_node;
+
+	} else if(right_sibling <= p_parent->size) {
+		// 把右兄弟合并到cursor上边来
+
+		Node* p_right_node = p_parent->children_or_sibling[right_sibling];
+
+		// 右边的 keys 都转移到 cursor 上边来
+		for(int i=p_cursor_node->size, j=0; j<p_cursor_node->size; ++i, ++j) {
+			p_cursor_node->key[i] = p_right_node->key[j];
+		}
+		p_cursor_node->children_or_sibling[p_cursor_node->size] = nullptr;
+		p_cursor_node->size += p_right_node->size;
+		p_cursor_node->children_or_sibling[p_cursor_node->size] = p_right_node->children_or_sibling[p_right_node->size];	// 因为childre要比key多一个
+
+		_RemoveInternal(p_parent->key[right_sibling-1], p_parent, p_right_node);
+
+		delete p_right_node;
+	}
+
 }
 
 void BPlusTree::Display()
@@ -362,6 +565,11 @@ Node* BPlusTree::_FindParent(Node* p_cursor, Node* p_child)
 	}
 
 	return nullptr;
+}
+
+void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child)
+{
+
 }
 
 
