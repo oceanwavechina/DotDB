@@ -53,8 +53,12 @@ public:
 	void Insert(int x);
 	bool Search(int x);
 	void Remove(int x);
-	void Display(Node* root);
+	void Display();
 	Node* Root();
+
+private:
+	void _InsertInternal(int x, Node* p_parent, Node* p_child);
+	Node* _FindParent(Node* p_cursor, Node* p_child);
 
 private:
 	Node* _root;
