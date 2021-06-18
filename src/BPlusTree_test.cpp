@@ -15,17 +15,17 @@ int main(int argc, char **argv)
 {
 	BPlusTree tree;
 
-	vector<int> keys = {12, 3, 4, 5, 6, 7, 23, 42, 178, 123, 4324,9, 54365};
-	for(const auto x : keys) {
-		tree.Insert(x);
-		tree.Display();
+	vector<int> keys = {25, 15, 35, 45, 5, 20, 30, 40, 55};
+	for(int i=0; i< keys.size(); ++i) {
+		tree.Insert(keys[i]);
+		tree.Display(i);
 		cout << endl << endl;
 	}
 
-	vector<int> del_keys = {12, 5, 6, 42, 178, 4324, 54365};
-	for(const auto x : del_keys) {
-		tree.Remove(x);
-		tree.Display();
+	vector<int> del_keys = {5, 15, 25, 35, 45};
+	for(int i=0; i< keys.size(); ++i) {
+		tree.Remove(keys[i]);
+		tree.Display(keys.size()-i);
 		cout << endl << endl;
 	}
 
