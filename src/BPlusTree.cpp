@@ -232,8 +232,6 @@ void BPlusTree::Remove(int x)
 		}
 	}
 
-	cout << "debug 1" << endl;
-
 	// 2. 看看这个叶子节点是否真的包含 x
 	int target_pos = p_cursor->FindDataPosAsLeaf(x);
 	if(target_pos == Node::npos) {
@@ -441,6 +439,10 @@ void BPlusTree::Display(int n_space)
 		for(int i=0; i<tmp->size; ++i) {
 			oss << tmp->key[i] << ",";
 		}
+		oss << "   ";
+		for(int i=0; i<=tmp->size; ++i) {
+			oss << tmp->ptrs[i] << ",";
+		}
 		oss << "    ";
 		cur_lvl_cnt -= 1;
 
@@ -462,6 +464,7 @@ void BPlusTree::Display(int n_space)
 
 	cout << oss.str() << endl;
 }
+
 
 Node* BPlusTree::Root()
 {
@@ -505,6 +508,7 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 			// 递归调用
 			// 注意下这里的第一个参数，我们这次传的是较小的里边的 end+1 位置上的元素
 			_InsertInternal(p_parent->key[p_parent->size], _FindParent(_root, p_parent), p_new_internal);
+			//_InsertInternal(p_new_internal->key[0], _FindParent(_root, p_parent), p_new_internal);
 		}
 	}
 }
@@ -720,7 +724,6 @@ Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 	while(x > virtual_node[target_pos] && target_pos < MAX) {
 		++target_pos;
 	}
-	//for(int i=MAX+1; i>target_pos; --i) {
 	for(int i=MAX; i>target_pos; --i) {
 		virtual_node[i] = virtual_node[i-1];
 	}
@@ -772,7 +775,6 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 	while(x>virtual_keys[i] && i<MAX) {
 		++i;
 	}
-	//for(int j=MAX+1; j>i; --j) {
 	for(int j=MAX; j>i; --j) {
 		virtual_keys[j] = virtual_keys[j-1];
 	}
