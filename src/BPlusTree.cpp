@@ -209,7 +209,7 @@ void BPlusTree::Remove(int x)
 		return;
 	}
 
-	cout << "prepare remove: " << x;
+	cout << "prepare remove: " << x << endl;
 
 	Node* p_cursor_node = _root;
 	Node* p_parent = nullptr;
@@ -245,7 +245,7 @@ void BPlusTree::Remove(int x)
 			break;
 		}
 	}
-	if(target_pos != -1) {
+	if(target_pos == -1) {
 		cout << "not found" << endl;
 		return;
 	}
@@ -718,41 +718,37 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		//leftnode + parent key + cursor
 		Node* p_left_node = p_parent->children_or_sibling[left_sibling_of_parent];
 		p_left_node->key[p_left_node->size] = p_parent->key[left_sibling_of_parent];
-		for(int i = p_left_node->size+1, j = 0; j < p_cursor->size; j++)
-		{
+		for(int i = p_left_node->size+1, j = 0; j < p_cursor->size; j++) {
 			p_left_node->key[i] = p_cursor->key[j];
 		}
-		for(int i = p_left_node->size+1, j = 0; j < p_cursor->size+1; j++)
-		{
+		for(int i = p_left_node->size+1, j = 0; j < p_cursor->size+1; j++) {
 			p_left_node->children_or_sibling[i] = p_cursor->children_or_sibling[j];
 			p_cursor->children_or_sibling[j] = NULL;
 		}
+
 		p_left_node->size += p_cursor->size+1;
 		p_cursor->size = 0;
+
 		//delete cursor
 		_RemoveInternal(p_parent->key[left_sibling_of_parent], p_parent, p_cursor);
-		cout<<"Merged with left sibling\n";
 
-	}
-	else if(right_sibling_of_parent <= p_parent->size)
-	{
+	} else if(right_sibling_of_parent <= p_parent->size) {
+
 		//cursor + parent key + rightnode
 		Node *rightNode = p_parent->children_or_sibling[right_sibling_of_parent];
 		p_cursor->key[p_cursor->size] = p_parent->key[right_sibling_of_parent-1];
-		for(int i = p_cursor->size+1, j = 0; j < rightNode->size; j++)
-		{
+		for(int i = p_cursor->size+1, j = 0; j < rightNode->size; j++) {
 			p_cursor->key[i] = rightNode->key[j];
 		}
-		for(int i = p_cursor->size+1, j = 0; j < rightNode->size+1; j++)
-		{
+		for(int i = p_cursor->size+1, j = 0; j < rightNode->size+1; j++) {
 			p_cursor->children_or_sibling[i] = rightNode->children_or_sibling[j];
 			rightNode->children_or_sibling[j] = NULL;
 		}
 		p_cursor->size += rightNode->size+1;
 		rightNode->size = 0;
+
 		//delete cursor
 		_RemoveInternal(p_parent->key[right_sibling_of_parent-1], p_parent, rightNode);
-		cout<<"Merged with right sibling\n";
 	}
 }
 
