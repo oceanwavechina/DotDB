@@ -19,14 +19,15 @@ int main(int argc, char **argv)
 	for(int i=0; i< keys.size(); ++i) {
 		tree.Insert(keys[i]);
 		tree.Display(i);
+        tree.Search(keys[i]);
 		cout << endl << endl;
 	}
 
-//	vector<int> del_keys = {5, 15, 25, 35, 45};
-//	for(int i=0; i< keys.size(); ++i) {
-//		tree.Remove(keys[i]);
-//		tree.Display(keys.size()-i);
-//		cout << endl << endl;
-//	}
+	vector<int> del_keys = {5, 15, 25, 35, 45};
+	for(int i=0; i< keys.size(); ++i) {
+		tree.Remove(keys[i]);
+		tree.Display(keys.size()-i);
+		cout << endl << endl;
+	}
 
 }

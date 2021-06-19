@@ -52,7 +52,7 @@ size_t Node::InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要
 	}
 
 	// 给 key 腾地儿
-	for(int j=key[target_pos]; j>target_pos; --j) {
+	for(int j=size; j>target_pos; --j) {
 		key[j] = key[j-1];
 	}
 
@@ -188,6 +188,7 @@ bool BPlusTree::Search(int x)
 			if(i == p_cur_node->size -1) {
 				// 最后一个的处理
 				p_cur_node = p_cur_node->ptrs[i+1];
+                break;
 			}
 		}
 	}
