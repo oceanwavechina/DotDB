@@ -15,7 +15,8 @@ int main(int argc, char **argv)
 {
 	BPlusTree tree;
 
-	vector<int> keys = {25, 15, 35, 45, 5, 20, 30, 40, 55};
+	vector<int> keys = {5, 15, 25, 35, 45};
+    //vector<int> keys = {25, 15, 35, 45, 5, 20, 30, 40, 55};
 	for(int i=0; i< keys.size(); ++i) {
 		tree.Insert(keys[i]);
 		tree.Display(i);
@@ -23,10 +24,10 @@ int main(int argc, char **argv)
 		cout << endl << endl;
 	}
 
-	vector<int> del_keys = {5, 15, 25, 35, 45};
-	for(int i=0; i< keys.size(); ++i) {
-		tree.Remove(keys[i]);
-		tree.Display(keys.size()-i);
+	vector<int> del_keys = {25, 15, 35, 45, 5, 20, 30, 40, 55};
+	for(int i=0; i< del_keys.size(); ++i) {
+		tree.Remove(del_keys[i]);
+		tree.Display(del_keys.size()-i);
 		cout << endl << endl;
 	}
 

@@ -9,7 +9,7 @@
 #include <queue>
 #include <sstream>
 
-size_t Node::FindDataPosAsLeaf(int x)
+int Node::FindDataPosAsLeaf(int x)
 {
 	for(int i=0; i< size; ++i) {
 		if(key[i] == x) {
@@ -17,10 +17,10 @@ size_t Node::FindDataPosAsLeaf(int x)
 		}
 	}
 
-	return npos;
+	return Node::npos;
 }
 
-size_t Node::InsertDataAsLeaf(int x)
+int Node::InsertDataAsLeaf(int x)
 {
 	int target_pos = 0;
 	// 1. 所有小于 x 的都在 x 的左边
@@ -44,7 +44,7 @@ size_t Node::InsertDataAsLeaf(int x)
 	return target_pos;
 }
 
-size_t Node::InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插入的孩子节点 */)
+int Node::InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插入的孩子节点 */)
 {
 	int target_pos = 0;
 	while(x>key[target_pos] && target_pos < size) {
@@ -118,7 +118,7 @@ void BPlusTree::Insert(int x)
 
 		if(p_cursor->size < MAX) {
 			// 直接在叶子节点上插入
-			size_t target_pos = p_cursor->InsertDataAsLeaf(x);
+			int target_pos = p_cursor->InsertDataAsLeaf(x);
 			cout << "Insert at leaf nodes, target pos: " << target_pos << endl;
 
 		} else {
@@ -136,7 +136,7 @@ void BPlusTree::Insert(int x)
 				Node* p_new_root = new Node;
 				p_new_root->key[0] = p_new_leaf->key[0];	// p_new_leaf中是比较大的部分，我们取第0号元素，就能满足B+树的性质
 				p_new_root->ptrs[0] = p_cursor;				// p_cursor 是小的那个node，放到左边
-				p_new_root->ptrs[1] = p_new_leaf;			// p_cursor 是大的那个node，放到右边
+				p_new_root->ptrs[1] = p_new_leaf;			// p_new_leaf 是大的那个node，放到右边
 				p_new_root->is_leaf = false;
 				p_new_root->size = 1;
 				_root = p_new_root;
@@ -232,14 +232,14 @@ void BPlusTree::Remove(int x)
 	}
 
 	// 2. 看看这个叶子节点是否真的包含 x
-	size_t target_pos = p_cursor->FindDataPosAsLeaf(x);
+	int target_pos = p_cursor->FindDataPosAsLeaf(x);
 	if(target_pos == Node::npos) {
 		cout << "not found" << endl;
 		return;
 	}
 
 	// 3. 先从叶子节点上 删除这个key
-	for(size_t i=target_pos; i<p_cursor->size; ++i) {
+	for(int i=target_pos; i<p_cursor->size; ++i) {
 		p_cursor->key[i] = p_cursor->key[i+1];
 	}
 	p_cursor->size -= 1;
@@ -476,7 +476,7 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 	if(p_parent->size < MAX) {
 		// 中间节点不需要分裂, 只需要在 keys 的合适位置插入
 
-		size_t target_pos = p_parent->InsertKeyAsInternal(x, p_child);
+		int target_pos = p_parent->InsertKeyAsInternal(x, p_child);
 
 		cout << "insert into internel node at: " << target_pos << endl;
 
@@ -496,22 +496,24 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 			p_new_root->is_leaf = false;
 			p_new_root->size = 1;
 			_root = p_new_root;
-
+            
 			cout << "create new root after split internal node" << endl;
 
 		} else {
 
+            cout << "new internal:" << p_new_internal->key[0] << endl;
+            cout << "parent:" << p_parent->key[0] << endl;
 			// 递归调用
 			// 注意下这里的第一个参数，我们这次传的是较小的里边的 end+1 位置上的元素
-			_InsertInternal(p_parent->key[p_parent->size], _FindParent(_root, p_parent), p_new_internal);
-			//_InsertInternal(p_new_internal->key[0], _FindParent(_root, p_parent), p_new_internal);
+            //_InsertInternal(p_parent->key[p_parent->size], _FindParent(_root, p_parent), p_new_internal);
+			_InsertInternal(p_new_internal->key[0], _FindParent(_root, p_parent), p_new_internal);
 		}
 	}
 }
 
 Node* BPlusTree::_FindParent(Node* p_cursor, Node* p_child)
 {
-	Node* p_parent;
+	Node* p_parent = nullptr;
 
 	if(p_cursor->is_leaf || p_cursor->ptrs[0]->is_leaf) {
 		return nullptr;
@@ -529,7 +531,7 @@ Node* BPlusTree::_FindParent(Node* p_cursor, Node* p_child)
 		}
 	}
 
-	return nullptr;
+	return p_parent;
 }
 
 void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be deleted*/)
@@ -731,9 +733,10 @@ Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 	p_new_leaf->size = MAX + 1 - p_cursor->size;
 
 	// 4. 处理叶子节点的链表关系, 新的叶子节点在右边，也就是新的叶子节点上的数据都是比较大的部分
+    //      p_cursor -> p_new_leaf
+    p_new_leaf->ptrs[p_new_leaf->size] = p_cursor->ptrs[MAX];
+    p_cursor->ptrs[MAX] = nullptr;
 	p_cursor->ptrs[p_cursor->size] = p_new_leaf;
-	p_new_leaf->ptrs[p_new_leaf->size] = p_cursor->ptrs[MAX];
-	p_cursor->ptrs[MAX] = nullptr;
 
 	// 5. 把virtual_node中的数据，分配到两个叶子节点上
 	cout << "on split leaf: old data: ";
@@ -776,7 +779,7 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 	}
 	virtual_keys[i] = x;
 
-	for(int j=MAX+2; j>i+1; j--) {
+	for(int j=MAX+2; j>i+1; --j) {
 		virtual_ptrs[j] = virtual_ptrs[j-1];
 	}
 	virtual_ptrs[i+1] = p_child;

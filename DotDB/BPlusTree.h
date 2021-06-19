@@ -35,16 +35,16 @@ public:
 		memset(ptrs, 0, sizeof(ptrs));
 	}
 
-	size_t FindDataPosAsLeaf(int x);
+    int FindDataPosAsLeaf(int x);
 
 	// 返回插入的位置
-	size_t InsertDataAsLeaf(int x);
+    int InsertDataAsLeaf(int x);
 
 	// 返回在 p_parent 中插入的位置
-	size_t InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插入的孩子节点 */);
+	int InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插入的孩子节点 */);
 
 public:
-	static const size_t npos = -1;
+	static const int npos = -1;
 
 private:
 	bool is_leaf;
