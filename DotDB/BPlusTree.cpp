@@ -118,7 +118,7 @@ void BPlusTree::Insert(int x)
 
 		if(p_cursor->size < MAX) {
 			// 直接在叶子节点上插入
-			int target_pos = p_cursor->InsertDataAsLeaf(x);
+			size_t target_pos = p_cursor->InsertDataAsLeaf(x);
 			cout << "Insert at leaf nodes, target pos: " << target_pos << endl;
 
 		} else {
@@ -168,8 +168,6 @@ bool BPlusTree::Search(int x)
 	if(!_root) {
 		return false;
 	}
-
-	bool found = false;
 
 	Node* p_cur_node = _root;
 
@@ -233,14 +231,14 @@ void BPlusTree::Remove(int x)
 	}
 
 	// 2. 看看这个叶子节点是否真的包含 x
-	int target_pos = p_cursor->FindDataPosAsLeaf(x);
+	size_t target_pos = p_cursor->FindDataPosAsLeaf(x);
 	if(target_pos == Node::npos) {
 		cout << "not found" << endl;
 		return;
 	}
 
 	// 3. 先从叶子节点上 删除这个key
-	for(int i=target_pos; i<p_cursor->size; ++i) {
+	for(size_t i=target_pos; i<p_cursor->size; ++i) {
 		p_cursor->key[i] = p_cursor->key[i+1];
 	}
 	p_cursor->size -= 1;
@@ -418,7 +416,7 @@ void space_prefix(ostringstream& oss, int n)
 void BPlusTree::Display(int n_space)
 {
 	ostringstream oss;
-	oss << "display:\n";
+	oss << "display:\n\n";
 
 	if(!_root) {
 		return;
@@ -440,10 +438,7 @@ void BPlusTree::Display(int n_space)
 			oss << tmp->key[i] << ",";
 		}
 		oss << "   ";
-		for(int i=0; i<=tmp->size; ++i) {
-			oss << tmp->ptrs[i] << ",";
-		}
-		oss << "    ";
+        
 		cur_lvl_cnt -= 1;
 
 		// 把孩子节点入队
@@ -480,7 +475,7 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 	if(p_parent->size < MAX) {
 		// 中间节点不需要分裂, 只需要在 keys 的合适位置插入
 
-		int target_pos = p_parent->InsertKeyAsInternal(x, p_child);
+		size_t target_pos = p_parent->InsertKeyAsInternal(x, p_child);
 
 		cout << "insert into internel node at: " << target_pos << endl;
 
@@ -771,7 +766,7 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 	}
 
 	// 2. 把要要插入的key和新node， 放到virtual的合适位置
-	int i=0, j;
+	int i=0;
 	while(x>virtual_keys[i] && i<MAX) {
 		++i;
 	}
