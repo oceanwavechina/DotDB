@@ -8,6 +8,24 @@
 #include "BPlusTree.h"
 #include <queue>
 #include <sstream>
+#include <cmath>
+#include <functional>
+
+
+bool Node::IsFull()
+{
+    return size == MAX;
+}
+
+void Node::Display(const string& msg)
+{
+    ostringstream oss;
+    cout << msg;
+    for(int i=0; i<size; ++i) {
+        cout << key[i] << ",";
+    }
+    cout << endl;
+}
 
 int Node::FindDataPosAsLeaf(int x)
 {
@@ -95,30 +113,13 @@ void BPlusTree::Insert(int x)
 		cout << "create root" << endl;
 
 	} else  {
-		Node* p_cursor = _root;
-		Node* p_parent = nullptr;
+        Node* p_target_leaf;
+        Node* p_parent;
+        std::tie(p_target_leaf, p_parent) = _FindTargetLeafNodeWithParent(x);
 
-		// 找到目标叶子节点
-		while(!p_cursor->is_leaf) {
-			p_parent = p_cursor;
-
-			for(int i=0; i<p_cursor->size; ++i) {
-
-				if(x < p_cursor->key[i]) {
-					p_cursor = p_cursor->ptrs[i];
-					break;
-				}
-
-				if(i == p_cursor->size-1) {
-					p_cursor = p_cursor->ptrs[i+1];
-					break;
-				}
-			}
-		}
-
-		if(p_cursor->size < MAX) {
+		if( ! p_target_leaf->IsFull() ) {
 			// 直接在叶子节点上插入
-			int target_pos = p_cursor->InsertDataAsLeaf(x);
+			int target_pos = p_target_leaf->InsertDataAsLeaf(x);
 			cout << "Insert at leaf nodes, target pos: " << target_pos << endl;
 
 		} else {
@@ -127,15 +128,15 @@ void BPlusTree::Insert(int x)
 			// 这个函数会把 p_cursor 中的元素 和 x 放到一起，然后分裂成两个
 			// 		这个 p_new_leaf 在 p_cursor 的右边，
 			// 		因为 p_new_leaf 中的元素 比 p_cursor 中的元素大
-			Node* p_new_leaf = _SplitLeafNodeWithInsert(p_cursor, x);
+			Node* p_new_leaf = _SplitLeafNodeWithInsert(p_target_leaf, x);
 
 			// 6. 当被拆分的 p_cursor 是根节点的时候
 			// 		这时候要重新创建一个根节点，把拆分的两个节点挂到父节点上
 			// 		也就是说这时候的树长高了
-			if(p_cursor == _root) {
+			if(p_target_leaf == _root) {
 				Node* p_new_root = new Node;
 				p_new_root->key[0] = p_new_leaf->key[0];	// p_new_leaf中是比较大的部分，我们取第0号元素，就能满足B+树的性质
-				p_new_root->ptrs[0] = p_cursor;				// p_cursor 是小的那个node，放到左边
+				p_new_root->ptrs[0] = p_target_leaf;				// p_cursor 是小的那个node，放到左边
 				p_new_root->ptrs[1] = p_new_leaf;			// p_new_leaf 是大的那个node，放到右边
 				p_new_root->is_leaf = false;
 				p_new_root->size = 1;
@@ -169,29 +170,9 @@ bool BPlusTree::Search(int x)
 		return false;
 	}
 
-	Node* p_cur_node = _root;
-
-	// 先找到目标节点
-	while(! p_cur_node->is_leaf) {
-
-		// 当前层级中查找
-		// 最终的数据都在叶子节点中，所以我们要遍历整个层级
-		for(int i=0; i<p_cur_node->size; ++i) {
-
-			if(x < p_cur_node->key[i]) {
-				// 在左边孩子中
-				p_cur_node = p_cur_node->ptrs[i];
-				break;
-			}
-
-			// 如果执行到这里说明要继续往右遍历
-			if(i == p_cur_node->size -1) {
-				// 最后一个的处理
-				p_cur_node = p_cur_node->ptrs[i+1];
-                break;
-			}
-		}
-	}
+    Node* p_cur_node;
+    Node* p_parent;
+	std::tie(p_cur_node, p_parent) = _FindTargetLeafNodeWithParent(x);
 
 	// 然后看看目标节点中是否真的有这个数据
 	return p_cur_node->FindDataPosAsLeaf(x) != Node::npos;
@@ -473,7 +454,7 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 	//  x 是要插入的key，
 	//
 
-	if(p_parent->size < MAX) {
+	if(!p_parent->IsFull()) {
 		// 中间节点不需要分裂, 只需要在 keys 的合适位置插入
 
 		int target_pos = p_parent->InsertKeyAsInternal(x, p_child);
@@ -487,7 +468,7 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 		Node* p_new_internal = _SplitInternalNodeWithInsert(p_parent, p_child, x);
 
 		if(p_parent == _root) {
-
+            
 			// 根节点直接插入就行
 			Node* p_new_root = new Node;
 			p_new_root->key[0] = p_parent->key[p_parent->size];
@@ -505,8 +486,8 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
             cout << "parent:" << p_parent->key[0] << endl;
 			// 递归调用
 			// 注意下这里的第一个参数，我们这次传的是较小的里边的 end+1 位置上的元素
-            //_InsertInternal(p_parent->key[p_parent->size], _FindParent(_root, p_parent), p_new_internal);
-			_InsertInternal(p_new_internal->key[0], _FindParent(_root, p_parent), p_new_internal);
+            _InsertInternal(p_parent->key[p_parent->size+1], _FindParent(_root, p_parent), p_new_internal);
+            //_InsertInternal(p_new_internal->key[0], _FindParent(_root, p_parent), p_new_internal);
 		}
 	}
 }
@@ -706,6 +687,38 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 	}
 }
 
+tuple<Node*/*target*/, Node*/*parent*/> BPlusTree::_FindTargetLeafNodeWithParent(int x)
+{
+    Node* p_cursor = _root;
+    Node* p_parent = nullptr;
+
+    // 先找到目标节点
+    while(! p_cursor->is_leaf) {
+        
+        p_parent  = p_cursor;
+        
+        // 当前层级中查找
+        // 最终的数据都在叶子节点中，所以我们要遍历整个层级
+        for(int i=0; i<p_cursor->size; ++i) {
+
+            if(x < p_cursor->key[i]) {
+                // 在左边孩子中
+                p_cursor = p_cursor->ptrs[i];
+                break;
+            }
+
+            // 如果执行到这里，说明遍历完了，我们直接取右下角那个node
+            if(i == p_cursor->size -1) {
+                // 最后一个的处理
+                p_cursor = p_cursor->ptrs[i+1];
+                break;
+            }
+        }
+    }
+    
+    return make_tuple(p_cursor, p_parent);
+}
+
 Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 {
 	Node* p_new_leaf = new Node;
@@ -734,23 +747,20 @@ Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 
 	// 4. 处理叶子节点的链表关系, 新的叶子节点在右边，也就是新的叶子节点上的数据都是比较大的部分
     //      p_cursor -> p_new_leaf
+    p_cursor->ptrs[p_cursor->size] = p_new_leaf;
     p_new_leaf->ptrs[p_new_leaf->size] = p_cursor->ptrs[MAX];
     p_cursor->ptrs[MAX] = nullptr;
-	p_cursor->ptrs[p_cursor->size] = p_new_leaf;
-
+	
 	// 5. 把virtual_node中的数据，分配到两个叶子节点上
-	cout << "on split leaf: old data: ";
 	for(int i=0; i<p_cursor->size; ++i) {
 		p_cursor->key[i] = virtual_node[i];
-		cout << virtual_node[i] << ",";
 	}
-	cout << endl;
-	cout << "on split leaf: new data: ";
+    p_cursor->Display("on split leaf: old data: ");
+    
 	for(int i=0, j=p_cursor->size; i< p_new_leaf->size; ++i, ++j) {
 		p_new_leaf->key[i] = virtual_node[j];
-		cout << virtual_node[j] << ",";
 	}
-	cout << endl;
+    p_cursor->Display("on split leaf: new data: ");
 
 	return p_new_leaf;
 }
@@ -759,6 +769,7 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 {
 	// 我们要分裂 parent
 
+    
 	// 1. 先准备待分裂的数据，包括key和children
 	int virtual_keys[MAX+1];
 	Node* virtual_ptrs[MAX+2];
@@ -779,7 +790,7 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 	}
 	virtual_keys[i] = x;
 
-	for(int j=MAX+2; j>i+1; --j) {
+	for(int j=MAX+1; j>i+1; --j) {
 		virtual_ptrs[j] = virtual_ptrs[j-1];
 	}
 	virtual_ptrs[i+1] = p_child;
@@ -790,10 +801,18 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 	p_new_internal->is_leaf = false;
 
 	// 分配下，每个节点存多少个数据
-	p_parent->size = (MAX+1) / 2;
+	p_parent->size =  (MAX+1) / 2;
 	p_new_internal->size = MAX - p_parent->size;
 
 	// 开始拷贝数据
+    
+    for(int i=0; i<p_parent->size+1; ++i) {
+        p_parent->key[i] = virtual_keys[i];
+    }
+    for(int i=0; i<p_parent->size+1; ++i) {
+        p_parent->ptrs[i] = virtual_ptrs[i];
+    }
+    
 	for(int i=0, j=p_parent->size+1; i<p_new_internal->size; ++i, ++j) {
 		p_new_internal->key[i] = virtual_keys[j];
 	}

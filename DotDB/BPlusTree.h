@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <tuple>
 
 using namespace std;
 
@@ -27,7 +28,7 @@ using namespace std;
 		4. Each node can contain a maximum of m - 1 keys and a minimum of ⌈m/2⌉ - 1 keys.
  */
 
-#define MAX	2
+#define MAX	 2
 
 class Node {
 public:
@@ -35,6 +36,10 @@ public:
 		memset(ptrs, 0, sizeof(ptrs));
 	}
 
+    bool IsFull();
+    
+    void Display(const string& msg);
+    
     int FindDataPosAsLeaf(int x);
 
 	// 返回插入的位置
@@ -72,6 +77,8 @@ private:
 	Node* _FindParent(Node* p_cursor, Node* p_child);
 	void _RemoveInternal(int x, Node* p_cursor, Node* p_child);
 
+    tuple<Node*/*target*/, Node*/*parent*/> _FindTargetLeafNodeWithParent(int x);
+    
 	Node* _SplitLeafNodeWithInsert(Node* p_cursor_node, int x);
 
 	// 这里 p_parent 是待分裂的Node， 即 p_parent 在插入 x 后 这Node就超过最大容量了
