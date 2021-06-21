@@ -149,7 +149,6 @@ void BPlusTree::Insert(int x)
 				//		中间层需要的话，在继续分列然后向上传递
 				//		第一个参数是新节点中最小的那个值，我们需要更新到parent中
 				//		同时还要吧 p_new_leaf 挂到parent里边
-				cout << "before _InsertInternal" << endl;
 				_InsertInternal(p_new_leaf->key[0], p_parent, p_new_leaf);
 			}
 		}
@@ -456,10 +455,9 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 
 	if(!p_parent->IsFull()) {
 		// 中间节点不需要分裂, 只需要在 keys 的合适位置插入
-
-		int target_pos = p_parent->InsertKeyAsInternal(x, p_child);
-
-		cout << "insert into internel node at: " << target_pos << endl;
+        cout << "insert into inner" << x << endl;
+        p_parent->Display("insert into inner");
+		p_parent->InsertKeyAsInternal(x, p_child);
 
 	} else {
 		// 需要分裂中间节点
@@ -481,13 +479,10 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 			cout << "create new root after split internal node" << endl;
 
 		} else {
-
-            cout << "new internal:" << p_new_internal->key[0] << endl;
-            cout << "parent:" << p_parent->key[0] << endl;
 			// 递归调用
 			// 注意下这里的第一个参数，我们这次传的是较小的里边的 end+1 位置上的元素
-            _InsertInternal(p_parent->key[p_parent->size+1], _FindParent(_root, p_parent), p_new_internal);
-            //_InsertInternal(p_new_internal->key[0], _FindParent(_root, p_parent), p_new_internal);
+            cout << "before insert into inner: " << p_parent->key[p_parent->size+1] << endl;
+            _InsertInternal(p_parent->key[p_parent->size], _FindParent(_root, p_parent), p_new_internal);
 		}
 	}
 }
@@ -721,6 +716,7 @@ tuple<Node*/*target*/, Node*/*parent*/> BPlusTree::_FindTargetLeafNodeWithParent
 
 Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 {
+    p_cursor->Display("split leaf node: ");
 	Node* p_new_leaf = new Node;
 	p_new_leaf->is_leaf = true;
 
@@ -739,7 +735,6 @@ Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 		virtual_node[i] = virtual_node[i-1];
 	}
 	virtual_node[target_pos] = x;
-	cout << "total size:" << MAX+1 << endl;
 
 	// 3. 分配两个叶子节点的数量
 	p_cursor->size = (MAX + 1) / 2;
@@ -755,12 +750,12 @@ Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 	for(int i=0; i<p_cursor->size; ++i) {
 		p_cursor->key[i] = virtual_node[i];
 	}
-    p_cursor->Display("on split leaf: old data: ");
+    p_cursor->Display("\ton split leaf: old data: ");
     
 	for(int i=0, j=p_cursor->size; i< p_new_leaf->size; ++i, ++j) {
 		p_new_leaf->key[i] = virtual_node[j];
 	}
-    p_cursor->Display("on split leaf: new data: ");
+    p_new_leaf->Display("\ton split leaf: new data: ");
 
 	return p_new_leaf;
 }
@@ -769,6 +764,7 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 {
 	// 我们要分裂 parent
 
+    p_parent->Display("split inner node: ");
     
 	// 1. 先准备待分裂的数据，包括key和children
 	int virtual_keys[MAX+1];
@@ -812,6 +808,7 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
     for(int i=0; i<p_parent->size+1; ++i) {
         p_parent->ptrs[i] = virtual_ptrs[i];
     }
+    p_parent->Display("\ton split leaf: old data: ");
     
 	for(int i=0, j=p_parent->size+1; i<p_new_internal->size; ++i, ++j) {
 		p_new_internal->key[i] = virtual_keys[j];
@@ -819,7 +816,9 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 	for(int i=0, j=p_parent->size+1; i< p_new_internal->size+1; ++i, ++j) {
 		p_new_internal->ptrs[i] = virtual_ptrs[j];
 	}
-
+    p_new_internal->Display("\ton split inner: new data: ");
+    cout << "\ton split inner: mid: " << x << endl;
+    
 	return p_new_internal;
 }
 
