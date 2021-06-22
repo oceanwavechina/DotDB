@@ -12,6 +12,10 @@
 #include <functional>
 
 
+Node::Node(): is_leaf(false), size(0) {
+    bzero(ptrs, sizeof(ptrs));
+}
+
 bool Node::IsFull()
 {
     return size == MAX;
@@ -21,7 +25,6 @@ bool Node::NeedBorrowOrMerge()
 {
     // 这里是一个node要包含的最少的key的个数
     // 少于这个数值就要合并了
-    
     return size < (MAX+1) / 2;
 }
 
@@ -122,7 +125,7 @@ bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_of_parent)
             // 更新 parent
             p_parent->key[left_sibling_of_parent] = key[0];
 
-            cout << "transfer " << key[0] << "from left sibling of leaf node" << endl;
+            cout << "borrow " << key[0] << "from left sibling of leaf node" << endl;
             
             return true;
             
@@ -169,7 +172,7 @@ bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_of_parent
             // 更新父节点
             p_parent->key[right_sibling_of_parent-1] = p_right_node->key[0];
 
-            cout << "transfer " << key[size-1] << "from right sibling of leaf node" << endl;
+            cout << "borrow " << key[size-1] << "from right sibling of leaf node" << endl;
 
             return true;
             
@@ -257,6 +260,23 @@ void Node::MergeFromRight(Node* p_right_node)
     ptrs[size] = nullptr;
     size += p_right_node->size;
     ptrs[size] = p_right_node->ptrs[p_right_node->size];    // 因为childre要比key多一个
+}
+
+Node* Node::SearchBetween(int start, int stop, vector<int>& values)
+{
+    bool ended = false;
+    
+    for(int i=0; i< size; ++i) {
+        if(key[i] >= start && key[i] <= stop) {
+            values.push_back(key[i]);
+        }
+        
+        if(key[i] > stop) {
+            ended = true;
+        }
+    }
+    
+    return ended ? nullptr : ptrs[size];
 }
 
 BPlusTree::BPlusTree()
@@ -350,6 +370,39 @@ bool BPlusTree::Search(int x)
 	return p_cur_node->FindDataPosAsLeaf(x) != Node::npos;
 }
 
+bool BPlusTree::Between(int start, int stop)
+{
+    //
+    //    https://www.programiz.com/dsa/b-plus-tree
+    //
+    //    1. 每个 Node 中的 keys 都是从小到大排序的
+    //    2. 我们要查找的数据只能在叶子节点中，中间节点都是索引节点，不包含数据
+    //  3. 当 x < keys[i] 时，下一次查找的 node，必然是children[i]； 否则在children[i+1， ...] 里边
+    //
+
+    if(!_root) {
+        return false;
+    }
+
+    cout << "search between:[" << start << "," << stop << "]: ";
+    
+    Node* p_cur_node;
+    Node* p_parent;
+    std::tie(p_cur_node, p_parent) = _FindTargetLeafNodeWithParent(start);
+    
+    vector<int> result;
+    while (p_cur_node) {
+        p_cur_node = p_cur_node->SearchBetween(start, stop, result);
+    }
+    
+    for(auto item : result) {
+        cout << item << ",";
+    }
+    cout << "\n" << endl;
+    
+    return true;
+}
+
 void BPlusTree::Remove(int x)
 {
 	if(!_root) {
@@ -369,6 +422,10 @@ void BPlusTree::Remove(int x)
     int target_pos = p_cursor->TryRemoveKeyAsLeaf(x);
     if(target_pos == Node::npos) {
         return;
+    }
+    if(target_pos == 0 && p_cursor->size > 0) {
+        cout << "change parent key to:" << p_cursor->key[0] << endl;
+        p_parent->key[right_sibling_of_parent - 2] = p_cursor->key[0];
     }
     
 	// 根节点的特殊处理
@@ -407,16 +464,16 @@ void BPlusTree::Remove(int x)
 	// 合并的原则是从右往左合并
 	// 		left  <--  cursor  <--  right
 
-    bool borrowed_from_left = p_cursor->TryBorrowFromLeftSibling(p_parent, left_sibling_of_parent);
-    if(borrowed_from_left) {
+    if(p_cursor->TryBorrowFromLeftSibling(p_parent, left_sibling_of_parent)) {
         return;
     }
 
-    bool borrowed_from_right = p_cursor->TryBorrowFromRightSibling(p_parent, right_sibling_of_parent);
-    if(borrowed_from_right) {
+    if(p_cursor->TryBorrowFromRightSibling(p_parent, right_sibling_of_parent)) {
         return;
     }
 
+    assert(left_sibling_of_parent >= 0 || right_sibling_of_parent <= p_parent->size);
+    
 	// 当不能从两边的兄弟节点都不能借到元素时，说明要跟其合并才能满足 B+树 的性质
 	// 下边就是合并的流程
 	if(left_sibling_of_parent >= 0) {

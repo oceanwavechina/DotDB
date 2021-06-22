@@ -35,9 +35,7 @@ using namespace std;
 
 class Node {
 public:
-	Node(): is_leaf(false), size(0) {
-		memset(ptrs, 0, sizeof(ptrs));
-	}
+    Node();
 
     bool IsFull();
     
@@ -64,6 +62,9 @@ public:
     void MergeToLeft(Node* p_left_node);
     
     void MergeFromRight(Node* p_right_node);
+    
+    // return right sibling if need to continue to search or nullptr
+    Node* SearchBetween(int start, int stop, vector<int>& values);
 
 public:
 	static const int npos = -1;
@@ -85,6 +86,7 @@ public:
 
 	void Insert(int x);
 	bool Search(int x);
+    bool Between(int start, int stop);
 	void Remove(int x);
 	void Display(int n_space = 0);
 	Node* Root();

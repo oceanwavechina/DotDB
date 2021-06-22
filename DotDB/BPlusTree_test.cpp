@@ -23,6 +23,12 @@ int main(int argc, char **argv)
         tree.Search(keys[i]);
 		cout << endl << endl;
 	}
+    
+    tree.Between(15, 40);
+    
+    tree.Between(-1, 100);
+    
+    tree.Between(-1, 1);
 
 	vector<int> del_keys = {25, 15, 35, 45, 5, 20, 30, 40, 55};
 	for(int i=0; i< del_keys.size(); ++i) {
