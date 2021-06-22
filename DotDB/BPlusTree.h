@@ -20,6 +20,9 @@ using namespace std;
 	https://cstack.github.io/db_tutorial/parts/part7.html
 	https://www.cnblogs.com/nullzx/p/8729425.html
 	https://www.programiz.com/dsa/b-plus-tree
+    
+    可视化的 B+树，方便理每一步流程，帮助debug代码
+        https://www.cs.usfca.edu/~galles/visualization/BPlusTree.html
 
 	B+ 树的性质
 		1. All leaves are at the same level.
@@ -38,6 +41,8 @@ public:
 
     bool IsFull();
     
+    bool NeedBorrowOrMerge();
+    
     void Display(const string& msg);
     
     int FindDataPosAsLeaf(int x);
@@ -47,6 +52,18 @@ public:
 
 	// 返回在 p_parent 中插入的位置
 	int InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插入的孩子节点 */);
+    
+    bool TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_of_parent);
+    bool TryBorrowFromRightSibling(Node* p_parent, int right_sibling_of_parent);
+    
+    //   返回 x 的 pos
+    int RemoveKeyAndChildAsInternal(int x, Node* p_child);
+    
+    int TryRemoveKeyAsLeaf(int x);
+    
+    void MergeToLeft(Node* p_left_node);
+    
+    void MergeFromRight(Node* p_right_node);
 
 public:
 	static const int npos = -1;
@@ -74,10 +91,11 @@ public:
 
 private:
 	void _InsertInternal(int x, Node* p_parent, Node* p_child);
-	Node* _FindParent(Node* p_cursor, Node* p_child);
+	Node* _FindParentRecursively(Node* p_cursor, Node* p_child);
 	void _RemoveInternal(int x, Node* p_cursor, Node* p_child);
 
     tuple<Node*/*target*/, Node*/*parent*/> _FindTargetLeafNodeWithParent(int x);
+    tuple<Node*/*target*/, Node*/*parent*/, int/*left_sibling*/, int/*right_sibling*/> _FindTargetLeafNodeWithParentAndBrothers(int x);
     
 	Node* _SplitLeafNodeWithInsert(Node* p_cursor_node, int x);
 

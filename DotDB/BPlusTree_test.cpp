@@ -24,11 +24,11 @@ int main(int argc, char **argv)
 		cout << endl << endl;
 	}
 
-//	vector<int> del_keys = {25, 15, 35, 45, 5, 20, 30, 40, 55};
-//	for(int i=0; i< del_keys.size(); ++i) {
-//		tree.Remove(del_keys[i]);
-//		tree.Display(del_keys.size()-i);
-//		cout << endl << endl;
-//	}
+	vector<int> del_keys = {25, 15, 35, 45, 5, 20, 30, 40, 55};
+	for(int i=0; i< del_keys.size(); ++i) {
+		tree.Remove(del_keys[i]);
+		tree.Display((int)del_keys.size()-i);
+		cout << endl << endl;
+	}
 
 }

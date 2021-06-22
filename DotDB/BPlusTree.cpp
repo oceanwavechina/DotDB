@@ -17,6 +17,14 @@ bool Node::IsFull()
     return size == MAX;
 }
 
+bool Node::NeedBorrowOrMerge()
+{
+    // 这里是一个node要包含的最少的key的个数
+    // 少于这个数值就要合并了
+    
+    return size < (MAX+1) / 2;
+}
+
 void Node::Display(const string& msg)
 {
     ostringstream oss;
@@ -86,6 +94,171 @@ int Node::InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插
 	return target_pos;
 }
 
+bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_of_parent)
+{
+    if(left_sibling_of_parent >= 0) {
+            // 要是左边兄弟的节点多，就从左边兄弟 借一个 过来
+            // 这里多的判断是 >= (MAX+1) / 2 + 1
+        Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
+
+        if(p_left_node->size >= (MAX+1) / 2 + 1) {
+
+            // 从左边拿过来的那个 key，肯定是要放到 key[0] 的位置的
+            for(int i=size; i>0; --i) {
+                key[i] = key[i-1];
+            }
+
+            size += 1;
+            // 注意这里 children_or_sibling 实际上是 sibling，因为我们此案在处理的是叶子节点
+            ptrs[size] = ptrs[size-1];
+            ptrs[size-1] = nullptr;
+
+            // 开始从左边兄弟节点转移数据
+            ptrs[0] = p_left_node->ptrs[p_left_node->size-1];
+            p_left_node->size -= 1;
+            p_left_node->ptrs[p_left_node->size] = this;
+            p_left_node->ptrs[p_left_node->size+1] = nullptr;
+
+            // 更新 parent
+            p_parent->key[left_sibling_of_parent] = key[0];
+
+            cout << "transfer " << key[0] << "from left sibling of leaf node" << endl;
+            
+            return true;
+            
+        }
+    }
+    
+    return false;
+}
+
+bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_of_parent)
+{
+    /*
+      如下图所示，children 比 key 要多一个
+
+                         parent
+                    /             \
+                left -> cursor -> right
+    */
+
+    if(right_sibling_of_parent <= p_parent->size) {
+        // 因为这里的 right_sibling 是 parent 中 children 的 pos
+        // 所以要跟 parent 的 size 比较
+        // 要是右边兄弟的节点多，就从右边兄弟 借一个 过来
+        Node* p_right_node = p_parent->ptrs[right_sibling_of_parent];
+
+        if(p_right_node->size >= (MAX+1) / 2 + 1) {
+
+            // 修改链表, cursor 多了一个元素，所以
+            size += 1;
+            ptrs[size] = ptrs[size - 1];
+            ptrs[size-1] = nullptr;
+
+            // 从右边转移一个到cursor
+            key[size-1] = p_right_node->key[0];
+
+            // 现在 right_node 的 key 和 children 都变了，要重新移动
+            p_right_node->size -= 1;
+            p_right_node->ptrs[p_right_node->size] = p_right_node->ptrs[p_right_node->size+1];
+            p_right_node->ptrs[p_right_node->size+1] = nullptr;
+            for(int i=0; i< p_right_node->size; ++i) {
+                p_right_node->key[i] = p_right_node->key[i+1];
+            }
+
+            // 更新父节点
+            p_parent->key[right_sibling_of_parent-1] = p_right_node->key[0];
+
+            cout << "transfer " << key[size-1] << "from right sibling of leaf node" << endl;
+
+            return true;
+            
+        }
+    }
+    
+    return false;
+}
+
+int Node::RemoveKeyAndChildAsInternal(int x, Node* p_child)
+{
+    // 从 cursor 里边删除x
+    int pos;
+    for(pos=0; pos< size; ++pos) {
+        if(key[pos] == x) {
+            break;
+        }
+    }
+    for(int i=pos; i< size; ++i) {
+        key[i] = key[i+1];
+    }
+    
+    // 删除孩子节点，如果有的话
+    for(pos=0; pos<size+1; ++pos) {
+        if(ptrs[pos] == p_child) {
+            break;
+        }
+    }
+    for(int i=pos; i<size+1; ++i) {
+        ptrs[i] = ptrs[i+1];
+    }
+    
+    size -= 1;
+    
+    return pos;
+}
+
+int Node::TryRemoveKeyAsLeaf(int x)
+{
+    int target_pos = FindDataPosAsLeaf(x);
+    if(target_pos == Node::npos) {
+        cout << "not found" << endl;
+        return npos;
+    }
+
+    // 3. 先从叶子节点上 删除这个key
+    for(int i=target_pos; i<size; ++i) {
+        key[i] = key[i+1];
+    }
+    size -= 1;
+
+    // 处理叶子节点链表的串联关系, 这里的size已经是 缩小1 以后的
+    ptrs[size] = ptrs[size + 1];
+    ptrs[size + 1] = nullptr;
+
+    return target_pos;
+}
+
+void Node::MergeToLeft(Node* p_left_node)
+{
+    // 当 left 兄弟存在时，则把数据合并到 left 兄弟， 然后把 cursor node 删除
+
+    /*
+      如下图所示，children 比 key 要多一个
+
+                        parent                                parent
+                    /      |      \         ->         /             \
+                left -> cursor -> right             left+cursor   -> right
+    */
+
+    for(int i=p_left_node->size, j=0; j<size; ++i, ++j) {
+        p_left_node->key[i] = key[j];
+    }
+    p_left_node->ptrs[p_left_node->size] = nullptr;
+    p_left_node->size += size;
+    p_left_node->ptrs[p_left_node->size] = ptrs[size];
+}
+
+void Node::MergeFromRight(Node* p_right_node)
+{
+    // 右边的 keys 都转移到 cursor 上边来
+    for(int i=size, j=0; j<size; ++i, ++j) {
+        key[i] = p_right_node->key[j];
+    }
+    ptrs[size] = nullptr;
+    size += p_right_node->size;
+    ptrs[size] = p_right_node->ptrs[p_right_node->size];    // 因为childre要比key多一个
+}
+
 BPlusTree::BPlusTree()
 : _root(nullptr){
 	// TODO Auto-generated constructor stub
@@ -110,7 +283,7 @@ void BPlusTree::Insert(int x)
 		_root->is_leaf = true;
 		_root->size = 1;
 
-		cout << "create root" << endl;
+		cout << "create initial root:" << x << endl;
 
 	} else  {
         Node* p_target_leaf;
@@ -185,45 +358,19 @@ void BPlusTree::Remove(int x)
 
 	cout << "prepare remove: " << x << endl;
 
+    // 1. 先找到可能包含 x 的那个叶子节点
 	Node* p_cursor = _root;
 	Node* p_parent = nullptr;
-	int left_sibling_of_parent, right_sibling_of_parent;
-
-	// 1. 先尝试找到包含 x 的那个叶子节点
-	while(!p_cursor->is_leaf) {
-
-		for(int i=0; i<p_cursor->size; ++i) {
-			p_parent = p_cursor;
-			left_sibling_of_parent = i-1;
-			right_sibling_of_parent = i+1;
-
-			if(x < p_cursor->key[i]) {
-				p_cursor = p_cursor->ptrs[i];
-				break;
-			}
-
-			if(i == p_cursor->size - 1) {
-				left_sibling_of_parent = i;
-				right_sibling_of_parent = i+2;
-				p_cursor = p_cursor->ptrs[i+1];
-				break;
-			}
-		}
-	}
-
-	// 2. 看看这个叶子节点是否真的包含 x
-	int target_pos = p_cursor->FindDataPosAsLeaf(x);
-	if(target_pos == Node::npos) {
-		cout << "not found" << endl;
-		return;
-	}
-
-	// 3. 先从叶子节点上 删除这个key
-	for(int i=target_pos; i<p_cursor->size; ++i) {
-		p_cursor->key[i] = p_cursor->key[i+1];
-	}
-	p_cursor->size -= 1;
-
+    int left_sibling_of_parent = -1;
+    int right_sibling_of_parent = INT_MAX;
+    tie(p_cursor, p_parent, left_sibling_of_parent, right_sibling_of_parent) = _FindTargetLeafNodeWithParentAndBrothers(x);
+    
+	// 2. 尝试现在叶节点删除这个元素，如果没有，直接返回
+    int target_pos = p_cursor->TryRemoveKeyAsLeaf(x);
+    if(target_pos == Node::npos) {
+        return;
+    }
+    
 	// 根节点的特殊处理
 	if(p_cursor == _root) {
 		//
@@ -243,14 +390,8 @@ void BPlusTree::Remove(int x)
 		}
 	}
 
-	// 处理叶子节点链表的串联关系
-	p_cursor->ptrs[p_cursor->size] = p_cursor->ptrs[p_cursor->size + 1];
-	p_cursor->ptrs[p_cursor->size + 1] = nullptr;
-
-	// 判断当前这个叶子节点需不要合并
-	if(p_cursor->size >= (MAX+1) / 2) {
-		// 这里是一个node要包含的最少的key的个数
-		// 少于这个数值就要合并了
+	// 判断当前这个叶子节点需不需要合并
+	if( ! p_cursor->NeedBorrowOrMerge()) {
 		return;
 	}
 
@@ -266,102 +407,24 @@ void BPlusTree::Remove(int x)
 	// 合并的原则是从右往左合并
 	// 		left  <--  cursor  <--  right
 
-	if(left_sibling_of_parent >= 0) {
-		// 要是左边兄弟的节点多，就从左边兄弟 借一个 过来
-		// 这里多的判断是 >= (MAX+1) / 2 + 1
+    bool borrowed_from_left = p_cursor->TryBorrowFromLeftSibling(p_parent, left_sibling_of_parent);
+    if(borrowed_from_left) {
+        return;
+    }
 
-		Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
-
-		if(p_left_node->size >= (MAX+1) / 2 + 1) {
-
-			// 从左边拿过来的那个 key，肯定是要放到 key[0] 的位置的
-			for(int i=p_cursor->size; i>0; --i) {
-				p_cursor->key[i] = p_cursor->key[i-1];
-			}
-
-			p_cursor->size += 1;
-			// 注意这里 children_or_sibling 实际上是 sibling，因为我们此案在处理的是叶子节点
-			p_cursor->ptrs[p_cursor->size] = p_cursor->ptrs[p_cursor->size-1];
-			p_cursor->ptrs[p_cursor->size-1] = nullptr;
-
-			// 开始从左边兄弟节点转移数据
-			p_cursor->ptrs[0] = p_left_node->ptrs[p_left_node->size-1];
-			p_left_node->size -= 1;
-			p_left_node->ptrs[p_left_node->size] = p_cursor;
-			p_left_node->ptrs[p_left_node->size+1] = nullptr;
-
-			// 更新 parent
-			p_parent->key[left_sibling_of_parent] = p_cursor->key[0];
-
-			cout << "transfer " << p_cursor->key[0] << "from left sibling of leaf node" << endl;
-
-			return ;
-		}
-	}
-
-	if(right_sibling_of_parent <= p_parent->size) {
-		// 因为这里的 right_sibling 是 parent 中 children 的 pos
-		// 所以要跟 parent 的 size 比较
-		// 要是右边兄弟的节点多，就从右边兄弟 借一个 过来
-
-		/*
-		  如下图所示，children 比 key 要多一个
-
-						     parent
-					    /             \
-				    left -> cursor -> right
-		*/
-
-		Node* p_right_node = p_parent->ptrs[right_sibling_of_parent];
-
-		if(p_right_node->size >= (MAX+1) / 2 + 1) {
-
-			// 修改链表, cursor 多了一个元素，所以
-			p_cursor->size += 1;
-			p_cursor->ptrs[p_cursor->size] = p_cursor->ptrs[p_cursor->size - 1];
-			p_cursor->ptrs[p_cursor->size-1] = nullptr;
-
-			// 从右边转移一个到cursor
-			p_cursor->key[p_cursor->size-1] = p_right_node->key[0];
-
-			// 现在 right_node 的 key 和 children 都变了，要重新移动
-			p_right_node->size -= 1;
-			p_right_node->ptrs[p_right_node->size] = p_right_node->ptrs[p_right_node->size+1];
-			p_right_node->ptrs[p_right_node->size+1] = nullptr;
-			for(int i=0; i< p_right_node->size; ++i) {
-				p_right_node->key[i] = p_right_node->key[i+1];
-			}
-
-			// 更新父节点
-			p_parent->key[right_sibling_of_parent-1] = p_right_node->key[0];
-
-			cout << "transfer " << p_cursor->key[p_cursor->size-1] << "from right sibling of leaf node" << endl;
-
-			return ;
-		}
-	}
+    bool borrowed_from_right = p_cursor->TryBorrowFromRightSibling(p_parent, right_sibling_of_parent);
+    if(borrowed_from_right) {
+        return;
+    }
 
 	// 当不能从两边的兄弟节点都不能借到元素时，说明要跟其合并才能满足 B+树 的性质
 	// 下边就是合并的流程
 	if(left_sibling_of_parent >= 0) {
 		// 当 left 兄弟存在时，则把数据合并到 left 兄弟， 然后把 cursor node 删除
 
-		/*
-		  如下图所示，children 比 key 要多一个
-
-							parent								parent
-						/      |      \         ->         /             \
-					left -> cursor -> right             left+cursor   -> right
-		*/
-
 		Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
 
-		for(int i=p_left_node->size, j=0; j< p_cursor->size; ++i, ++j) {
-			p_left_node->key[i] = p_cursor->key[j];
-		}
-		p_left_node->ptrs[p_left_node->size] = nullptr;
-		p_left_node->size += p_cursor->size;
-		p_left_node->ptrs[p_left_node->size] = p_cursor->ptrs[p_cursor->size];
+        p_cursor->MergeToLeft(p_left_node);
 
 		_RemoveInternal(p_parent->key[left_sibling_of_parent], p_parent, p_cursor);
 
@@ -372,19 +435,12 @@ void BPlusTree::Remove(int x)
 
 		Node* p_right_node = p_parent->ptrs[right_sibling_of_parent];
 
-		// 右边的 keys 都转移到 cursor 上边来
-		for(int i=p_cursor->size, j=0; j<p_cursor->size; ++i, ++j) {
-			p_cursor->key[i] = p_right_node->key[j];
-		}
-		p_cursor->ptrs[p_cursor->size] = nullptr;
-		p_cursor->size += p_right_node->size;
-		p_cursor->ptrs[p_cursor->size] = p_right_node->ptrs[p_right_node->size];	// 因为childre要比key多一个
+        p_cursor->MergeFromRight(p_right_node);
 
 		_RemoveInternal(p_parent->key[right_sibling_of_parent-1], p_parent, p_right_node);
 
 		delete p_right_node;
 	}
-
 }
 
 void space_prefix(ostringstream& oss, int n)
@@ -416,9 +472,12 @@ void BPlusTree::Display(int n_space)
 
 		// 先输出当前层的数据
 		for(int i=0; i<tmp->size; ++i) {
-			oss << tmp->key[i] << ",";
+			oss << tmp->key[i];
+            if(i != tmp->size-1) {
+                oss << ",";
+            }
 		}
-		oss << "   ";
+		oss << "      ";
         
 		cur_lvl_cnt -= 1;
 
@@ -447,7 +506,7 @@ Node* BPlusTree::Root()
 	return _root;
 }
 
-void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* p_child)
+void BPlusTree::_InsertInternal(int x/*注意当p_child是叶节点与否，而传入的值不同*/, Node* p_parent, Node* p_child)
 {
 	//
 	//  x 是要插入的key，
@@ -467,9 +526,10 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 
 		if(p_parent == _root) {
             
-			// 根节点直接插入就行
+			// 被分类的节点是根节点，也就是根节点分裂成两个了
+            // 这时候，要创建一个新的根节点，放在他俩的上边
 			Node* p_new_root = new Node;
-			p_new_root->key[0] = p_parent->key[p_parent->size];
+			p_new_root->key[0] = p_parent->key[p_parent->size]; // 注意这里用的是size, 而不是size-1， 因为parent是较小的那个，size就 median
 			p_new_root->ptrs[0] = p_parent;
 			p_new_root->ptrs[1] = p_new_internal;
 			p_new_root->is_leaf = false;
@@ -481,13 +541,13 @@ void BPlusTree::_InsertInternal(int x/*p_child->key[0]*/, Node* p_parent, Node* 
 		} else {
 			// 递归调用
 			// 注意下这里的第一个参数，我们这次传的是较小的里边的 end+1 位置上的元素
-            cout << "before insert into inner: " << p_parent->key[p_parent->size+1] << endl;
-            _InsertInternal(p_parent->key[p_parent->size], _FindParent(_root, p_parent), p_new_internal);
+            cout << "before insert into inner: " << p_parent->key[p_parent->size] << endl;
+            _InsertInternal(p_parent->key[p_parent->size], _FindParentRecursively(_root, p_parent), p_new_internal);
 		}
 	}
 }
 
-Node* BPlusTree::_FindParent(Node* p_cursor, Node* p_child)
+Node* BPlusTree::_FindParentRecursively(Node* p_cursor, Node* p_child)
 {
 	Node* p_parent = nullptr;
 
@@ -500,7 +560,7 @@ Node* BPlusTree::_FindParent(Node* p_cursor, Node* p_child)
 			p_parent = p_cursor;
 			return p_parent;
 		} else {
-			p_parent = _FindParent(p_cursor->ptrs[i], p_child);
+			p_parent = _FindParentRecursively(p_cursor->ptrs[i], p_child);
 			if(p_parent) {
 				return p_parent;
 			}
@@ -543,24 +603,8 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 
 	// TODO: x 是要删除的节点？？
 	// 从 cursor 里边删除x
-	int pos;
-	for(pos=0; pos< p_cursor->size; ++pos) {
-		if(p_cursor->key[pos] == x) {
-			break;
-		}
-	}
-	for(int i=pos; i< p_cursor->size; ++i) {
-		p_cursor->key[i] = p_cursor->key[i+1];
-	}
-	for(pos=0; pos<p_cursor->size+1; ++pos) {
-		if(p_cursor->ptrs[pos] == p_child) {
-			break;
-		}
-	}
-	for(int i=pos; i<p_cursor->size+1; ++i) {
-		p_cursor->ptrs[i] = p_cursor->ptrs[i+1];
-	}
-	p_cursor->size -= 1;
+    
+    int pos = p_cursor->RemoveKeyAndChildAsInternal(x, p_child);
 
 	// 父节点满足 B+ 树的要求了，到此为止
 	// 根节点除外
@@ -571,9 +615,10 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		return;
 	}
 
-	Node* p_parent = _FindParent(_root, p_cursor);
+	Node* p_parent = _FindParentRecursively(_root, p_cursor);
 
-	int left_sibling_of_parent, right_sibling_of_parent;
+    int left_sibling_of_parent = -1;
+    int right_sibling_of_parent = INT_MAX;
 	for(pos=0; pos<p_parent->size+1; ++pos) {
 		if(p_parent->ptrs[pos] == p_cursor) {
 			left_sibling_of_parent = pos - 1;
@@ -623,10 +668,12 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 
 	if(right_sibling_of_parent <= p_parent->size) {
 		Node* p_right_ndoe = p_parent->ptrs[right_sibling_of_parent];
-		if(p_right_ndoe->size >= (MAX+1) / 2) {
+		
+        if(p_right_ndoe->size >= (MAX+1) / 2) {
 			p_cursor->key[p_cursor->size] = p_parent->key[pos];
 			p_parent->key[pos] = p_right_ndoe->key[0];
-			for(int i=0; i<p_right_ndoe->size-1; ++i) {
+		
+            for(int i=0; i<p_right_ndoe->size-1; ++i) {
 				p_right_ndoe->key[i] = p_right_ndoe->key[i+1];
 			}
 
@@ -643,12 +690,13 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 	}
 
 	//transfer wasnt posssible hence do merging
-	if(left_sibling_of_parent >= 0)
-	{
-		//leftnode + parent key + cursor
+	if(left_sibling_of_parent >= 0) {
+		
+        //leftnode + parent key + cursor
 		Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
 		p_left_node->key[p_left_node->size] = p_parent->key[left_sibling_of_parent];
-		for(int i = p_left_node->size+1, j = 0; j < p_cursor->size; j++) {
+		
+        for(int i = p_left_node->size+1, j = 0; j < p_cursor->size; j++) {
 			p_left_node->key[i] = p_cursor->key[j];
 		}
 		for(int i = p_left_node->size+1, j = 0; j < p_cursor->size+1; j++) {
@@ -674,7 +722,7 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 			p_cursor->ptrs[i] = rightNode->ptrs[j];
 			rightNode->ptrs[j] = NULL;
 		}
-		p_cursor->size += rightNode->size+1;
+		p_cursor->size += rightNode->size + 1;
 		rightNode->size = 0;
 
 		//delete cursor
@@ -712,6 +760,38 @@ tuple<Node*/*target*/, Node*/*parent*/> BPlusTree::_FindTargetLeafNodeWithParent
     }
     
     return make_tuple(p_cursor, p_parent);
+}
+
+tuple<Node*/*target*/, Node*/*parent*/, int/*left_sibling*/, int/*right_sibling*/> BPlusTree::_FindTargetLeafNodeWithParentAndBrothers(int x)
+{
+    Node* p_cursor = _root;
+    Node* p_parent = nullptr;
+    int left_sibling_of_parent = -1;
+    int right_sibling_of_parent = INT_MAX;
+
+    // 1. 先尝试找到包含 x 的那个叶子节点
+    while(!p_cursor->is_leaf) {
+
+        for(int i=0; i<p_cursor->size; ++i) {
+            p_parent = p_cursor;
+            left_sibling_of_parent = i-1;
+            right_sibling_of_parent = i+1;
+
+            if(x < p_cursor->key[i]) {
+                p_cursor = p_cursor->ptrs[i];
+                break;
+            }
+
+            if(i == p_cursor->size - 1) {
+                left_sibling_of_parent = i;
+                right_sibling_of_parent = i+2;
+                p_cursor = p_cursor->ptrs[i+1];
+                break;
+            }
+        }
+    }
+    
+    return make_tuple(p_cursor, p_parent, left_sibling_of_parent, right_sibling_of_parent);
 }
 
 Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
