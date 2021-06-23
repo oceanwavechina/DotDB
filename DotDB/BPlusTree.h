@@ -41,7 +41,9 @@ public:
     
     bool NeedBorrowOrMerge();
     
+    // debug
     void Display(const string& msg);
+    string Keys();
     
     int FindDataPosAsLeaf(int x);
 
@@ -51,8 +53,8 @@ public:
 	// 返回在 p_parent 中插入的位置
 	int InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插入的孩子节点 */);
     
-    bool TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_of_parent);
-    bool TryBorrowFromRightSibling(Node* p_parent, int right_sibling_of_parent);
+    bool TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_in_parent);
+    bool TryBorrowFromRightSibling(Node* p_parent, int right_sibling_in_parent);
     
     //   返回 x 的 pos
     int RemoveKeyAndChildAsInternal(int x, Node* p_child);

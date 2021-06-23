@@ -31,11 +31,21 @@ bool Node::NeedBorrowOrMerge()
 void Node::Display(const string& msg)
 {
     ostringstream oss;
-    cout << msg;
+    cout << msg << ": ";
     for(int i=0; i<size; ++i) {
         cout << key[i] << ",";
     }
     cout << endl;
+}
+
+string Node::Keys()
+{
+    ostringstream oss;
+    for(int i=0; i<size; ++i) {
+        cout << key[i] << ",";
+    }
+    
+    return oss.str();
 }
 
 int Node::FindDataPosAsLeaf(int x)
@@ -97,15 +107,17 @@ int Node::InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插
 	return target_pos;
 }
 
-bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_of_parent)
+bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_in_parent)
 {
-    if(left_sibling_of_parent >= 0) {
+    if(left_sibling_in_parent >= 0) {
             // 要是左边兄弟的节点多，就从左边兄弟 借一个 过来
             // 这里多的判断是 >= (MAX+1) / 2 + 1
-        Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
+        Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
 
         if(p_left_node->size >= (MAX+1) / 2 + 1) {
 
+            cout << "will borrow " << key[0] << "from " << p_left_node->Keys() << " left sibling" << endl;
+            
             // 从左边拿过来的那个 key，肯定是要放到 key[0] 的位置的
             for(int i=size; i>0; --i) {
                 key[i] = key[i-1];
@@ -123,9 +135,7 @@ bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_of_parent)
             p_left_node->ptrs[p_left_node->size+1] = nullptr;
 
             // 更新 parent
-            p_parent->key[left_sibling_of_parent] = key[0];
-
-            cout << "borrow " << key[0] << "from left sibling of leaf node" << endl;
+            p_parent->key[left_sibling_in_parent] = key[0];
             
             return true;
             
@@ -135,7 +145,7 @@ bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_of_parent)
     return false;
 }
 
-bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_of_parent)
+bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_in_parent)
 {
     /*
       如下图所示，children 比 key 要多一个
@@ -145,14 +155,16 @@ bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_of_parent
                 left -> cursor -> right
     */
 
-    if(right_sibling_of_parent <= p_parent->size) {
+    if(right_sibling_in_parent <= p_parent->size) {
         // 因为这里的 right_sibling 是 parent 中 children 的 pos
         // 所以要跟 parent 的 size 比较
         // 要是右边兄弟的节点多，就从右边兄弟 借一个 过来
-        Node* p_right_node = p_parent->ptrs[right_sibling_of_parent];
+        Node* p_right_node = p_parent->ptrs[right_sibling_in_parent];
 
         if(p_right_node->size >= (MAX+1) / 2 + 1) {
 
+            cout << "will borrow " << key[0] << "from " << p_right_node->Keys() << " right sibling" << endl;
+            
             // 修改链表, cursor 多了一个元素，所以
             size += 1;
             ptrs[size] = ptrs[size - 1];
@@ -170,9 +182,7 @@ bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_of_parent
             }
 
             // 更新父节点
-            p_parent->key[right_sibling_of_parent-1] = p_right_node->key[0];
-
-            cout << "borrow " << key[size-1] << "from right sibling of leaf node" << endl;
+            p_parent->key[right_sibling_in_parent-1] = p_right_node->key[0];
 
             return true;
             
@@ -311,21 +321,21 @@ void BPlusTree::Insert(int x)
         std::tie(p_target_leaf, p_parent) = _FindTargetLeafNodeWithParent(x);
 
 		if( ! p_target_leaf->IsFull() ) {
-			// 直接在叶子节点上插入
+			// 情况一： 叶子节点没有满， 直接在 **叶子节点** 上插入
 			int target_pos = p_target_leaf->InsertDataAsLeaf(x);
 			cout << "Insert at leaf nodes, target pos: " << target_pos << endl;
 
 		} else {
-			// 需要把这个 p_cursor 节点分裂成两个，注意此时我们分裂的是叶子节点
-
-			// 这个函数会把 p_cursor 中的元素 和 x 放到一起，然后分裂成两个
-			// 		这个 p_new_leaf 在 p_cursor 的右边，
-			// 		因为 p_new_leaf 中的元素 比 p_cursor 中的元素大
+            // 情况二： 叶子节点满了，需要分裂 **叶子节点**
+			// 这个函数会把 p_cursor 中的元素 和 x 放到一起（有序），然后分裂成两个
+			//    1. p_new_leaf 在 p_cursor 的右边，
+			//    2. p_new_leaf 中的元素 比 p_cursor 中的元素大
+            //    3. p_cursor 中的元素个数 小于等于 p_new_leaf 中的元素个数
 			Node* p_new_leaf = _SplitLeafNodeWithInsert(p_target_leaf, x);
 
-			// 6. 当被拆分的 p_cursor 是根节点的时候
-			// 		这时候要重新创建一个根节点，把拆分的两个节点挂到父节点上
-			// 		也就是说这时候的树长高了
+			// 当被拆分的 p_cursor 是根节点的时候
+			//     这时候要重新创建一个根节点，把拆分的两个节点挂到父节点上
+			//     也就是说这时候的树长高了
 			if(p_target_leaf == _root) {
 				Node* p_new_root = new Node;
 				p_new_root->key[0] = p_new_leaf->key[0];	// p_new_leaf中是比较大的部分，我们取第0号元素，就能满足B+树的性质
@@ -334,14 +344,15 @@ void BPlusTree::Insert(int x)
 				p_new_root->is_leaf = false;
 				p_new_root->size = 1;
 				_root = p_new_root;
-				cout << "create new root after split leaf node" << endl;
+                
+				cout << "create new root after split leaf node, with median: " << p_new_leaf->key[0] << endl;
 
 			} else {
 				//	这里的递归调用是自下而上的分列的，
-				//		最下边的先分类，多出来的，还要在中间层插入
-				//		中间层需要的话，在继续分列然后向上传递
-				//		第一个参数是新节点中最小的那个值，我们需要更新到parent中
-				//		同时还要吧 p_new_leaf 挂到parent里边
+				//    1. 最下边的先分裂(leaf node)，然后被分裂的两个 Node 的 median，插入到 parent 中
+				//    2. 中间层需要的话，在继续分列然后向上传递
+				//    3. 第一个参数是新节点中最小的那个值，也就是被分裂的两个 Node 的 median 我们需要更新到parent中
+				//        同时还要吧 p_new_leaf 挂到parent里边
 				_InsertInternal(p_new_leaf->key[0], p_parent, p_new_leaf);
 			}
 		}
@@ -414,19 +425,20 @@ void BPlusTree::Remove(int x)
     // 1. 先找到可能包含 x 的那个叶子节点
 	Node* p_cursor = _root;
 	Node* p_parent = nullptr;
-    int left_sibling_of_parent = -1;
-    int right_sibling_of_parent = INT_MAX;
-    tie(p_cursor, p_parent, left_sibling_of_parent, right_sibling_of_parent) = _FindTargetLeafNodeWithParentAndBrothers(x);
+    int left_sibling_in_parent = -1;
+    int right_sibling_in_parent = INT_MAX;
+    tie(p_cursor, p_parent, left_sibling_in_parent, right_sibling_in_parent) = _FindTargetLeafNodeWithParentAndBrothers(x);
     
 	// 2. 尝试现在叶节点删除这个元素，如果没有，直接返回
     int target_pos = p_cursor->TryRemoveKeyAsLeaf(x);
     if(target_pos == Node::npos) {
+        cout << "not found" << endl;
         return;
     }
-    if(target_pos == 0 && p_cursor->size > 0) {
-        cout << "change parent key to:" << p_cursor->key[0] << endl;
-        p_parent->key[right_sibling_of_parent - 2] = p_cursor->key[0];
-    }
+//    if(target_pos == 0 && p_cursor->size > 0) {
+//        cout << "change parent key to:" << p_cursor->key[0] << endl;
+//        p_parent->key[right_sibling_in_parent - 2] = p_cursor->key[0];
+//    }
     
 	// 根节点的特殊处理
 	if(p_cursor == _root) {
@@ -449,6 +461,7 @@ void BPlusTree::Remove(int x)
 
 	// 判断当前这个叶子节点需不需要合并
 	if( ! p_cursor->NeedBorrowOrMerge()) {
+        cout << "no need to borrow or merge, stop here" << endl;
 		return;
 	}
 
@@ -464,37 +477,46 @@ void BPlusTree::Remove(int x)
 	// 合并的原则是从右往左合并
 	// 		left  <--  cursor  <--  right
 
-    if(p_cursor->TryBorrowFromLeftSibling(p_parent, left_sibling_of_parent)) {
+    if(p_cursor->TryBorrowFromLeftSibling(p_parent, left_sibling_in_parent)) {
         return;
     }
 
-    if(p_cursor->TryBorrowFromRightSibling(p_parent, right_sibling_of_parent)) {
+    if(p_cursor->TryBorrowFromRightSibling(p_parent, right_sibling_in_parent)) {
         return;
     }
 
-    assert(left_sibling_of_parent >= 0 || right_sibling_of_parent <= p_parent->size);
+    assert(left_sibling_in_parent >= 0 || right_sibling_in_parent <= p_parent->size);
     
 	// 当不能从两边的兄弟节点都不能借到元素时，说明要跟其合并才能满足 B+树 的性质
 	// 下边就是合并的流程
-	if(left_sibling_of_parent >= 0) {
-		// 当 left 兄弟存在时，则把数据合并到 left 兄弟， 然后把 cursor node 删除
+	if(left_sibling_in_parent >= 0) {
+		// 当 left 兄弟存在时，则把数据合并到 left 兄弟，然后把当前删除
 
-		Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
+		Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
 
+        cout << "will merge " << p_cursor->Keys() << " to left sibling " << p_left_node->Keys() << endl;
+        
         p_cursor->MergeToLeft(p_left_node);
+        
+        cout << "\t after merge, left sibling: " << p_left_node->Keys() << endl;
+        cout << "will remove interval: " << p_parent->key[left_sibling_in_parent] << endl;
 
-		_RemoveInternal(p_parent->key[left_sibling_of_parent], p_parent, p_cursor);
+		_RemoveInternal(p_parent->key[left_sibling_in_parent], p_parent, p_cursor);
 
 		delete p_cursor;
 
-	} else if(right_sibling_of_parent <= p_parent->size) {
-		// 把右兄弟合并到cursor上边来
-
-		Node* p_right_node = p_parent->ptrs[right_sibling_of_parent];
+	} else if(right_sibling_in_parent <= p_parent->size) {
+        // 当 right 兄弟存在时，则把right兄弟合并到当前节点，然后把当前删除
+        
+		Node* p_right_node = p_parent->ptrs[right_sibling_in_parent];
+        
+        cout << "will merge " << p_cursor->Keys() << " to right sibling " << p_right_node->Keys() << endl;
 
         p_cursor->MergeFromRight(p_right_node);
+        
+        cout << "\t after merge, right sibling: " << p_right_node->Keys() << endl;
 
-		_RemoveInternal(p_parent->key[right_sibling_of_parent-1], p_parent, p_right_node);
+		_RemoveInternal(p_parent->key[right_sibling_in_parent-1], p_parent, p_right_node);
 
 		delete p_right_node;
 	}
@@ -563,31 +585,30 @@ Node* BPlusTree::Root()
 	return _root;
 }
 
-void BPlusTree::_InsertInternal(int x/*注意当p_child是叶节点与否，而传入的值不同*/, Node* p_parent, Node* p_child)
+void BPlusTree::_InsertInternal(int x/*注意当p_child是叶节点与否，而传入的值不同*/, Node* p_cursor, Node* p_child)
 {
 	//
-	//  x 是要插入的key，
+	//  x 是要插入的key，也就是下一层中的那个 median
 	//
-
-	if(!p_parent->IsFull()) {
+	if(!p_cursor->IsFull()) {
 		// 中间节点不需要分裂, 只需要在 keys 的合适位置插入
-        cout << "insert into inner" << x << endl;
-        p_parent->Display("insert into inner");
-		p_parent->InsertKeyAsInternal(x, p_child);
+        cout << "will insert " << x << " into inner(none full) " << endl;
+		p_cursor->InsertKeyAsInternal(x, p_child);
+        p_cursor->Display("\tafter insert into inner");
 
 	} else {
 		// 需要分裂中间节点
 
 		// p_new_internal 里边的数据是比较大的部分
-		Node* p_new_internal = _SplitInternalNodeWithInsert(p_parent, p_child, x);
+		Node* p_new_internal = _SplitInternalNodeWithInsert(p_cursor, p_child, x);
 
-		if(p_parent == _root) {
+		if(p_cursor == _root) {
             
 			// 被分类的节点是根节点，也就是根节点分裂成两个了
             // 这时候，要创建一个新的根节点，放在他俩的上边
 			Node* p_new_root = new Node;
-			p_new_root->key[0] = p_parent->key[p_parent->size]; // 注意这里用的是size, 而不是size-1， 因为parent是较小的那个，size就 median
-			p_new_root->ptrs[0] = p_parent;
+			p_new_root->key[0] = p_cursor->key[p_cursor->size]; // 注意这里用的是size, 而不是size-1， 因为parent是较小的那个，size就 median
+			p_new_root->ptrs[0] = p_cursor;
 			p_new_root->ptrs[1] = p_new_internal;
 			p_new_root->is_leaf = false;
 			p_new_root->size = 1;
@@ -596,10 +617,13 @@ void BPlusTree::_InsertInternal(int x/*注意当p_child是叶节点与否，而�
 			cout << "create new root after split internal node" << endl;
 
 		} else {
-			// 递归调用
-			// 注意下这里的第一个参数，我们这次传的是较小的里边的 end+1 位置上的元素
-            cout << "before insert into inner: " << p_parent->key[p_parent->size] << endl;
-            _InsertInternal(p_parent->key[p_parent->size], _FindParentRecursively(_root, p_parent), p_new_internal);
+			// 当前是中间节点，被分裂后，需要把 median 插入到上一层中
+			// 注意下这里的第一个参数，我们这次传的是较小的里边的 end+1 位置上的元素，为什么会是这样？
+            //    1. 首先，不会内存溢出，因为分裂后，p_cursor 中的元素个数肯定小于树的度
+            //    2. size+1 的位置，实际上就是被分裂的两个 Node 的 median， 为什么？
+            //        因为 **中间节点不保存这个median** ，而是要插入到上一层
+            cout << "InsertInternal will insert median " << p_cursor->key[p_cursor->size] << " into upper level" << endl;
+            _InsertInternal(p_cursor->key[p_cursor->size], _FindParentRecursively(_root, p_cursor), p_new_internal);
 		}
 	}
 }
@@ -630,7 +654,6 @@ Node* BPlusTree::_FindParentRecursively(Node* p_cursor, Node* p_child)
 void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be deleted*/)
 {
 	if(p_cursor == _root) {
-
 		/*
 		  如下图所示，children 比 key 要多一个
 
@@ -640,7 +663,6 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		*/
 
 		if(p_cursor->size == 1) {
-
 			// p_child 是 cursor 的孩子节点，且是要被删除的节点, 如果 p_child 被删除了，那cursor就剩一个孩子了
 			// 根据 B+ 树的规则，根节点最少有两个孩子节点
 
@@ -661,7 +683,9 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 	// TODO: x 是要删除的节点？？
 	// 从 cursor 里边删除x
     
+    cout << "will remove internal key: " << x << " and child" << p_child->Keys() << " from " << p_cursor->Keys() << endl;
     int pos = p_cursor->RemoveKeyAndChildAsInternal(x, p_child);
+    cout << "after remove internal key: " << x << p_cursor->Keys() << endl;
 
 	// 父节点满足 B+ 树的要求了，到此为止
 	// 根节点除外
@@ -674,12 +698,12 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 
 	Node* p_parent = _FindParentRecursively(_root, p_cursor);
 
-    int left_sibling_of_parent = -1;
-    int right_sibling_of_parent = INT_MAX;
+    int left_sibling_in_parent = -1;
+    int right_sibling_in_parent = INT_MAX;
 	for(pos=0; pos<p_parent->size+1; ++pos) {
 		if(p_parent->ptrs[pos] == p_cursor) {
-			left_sibling_of_parent = pos - 1;
-			right_sibling_of_parent = pos + 1;
+			left_sibling_in_parent = pos - 1;
+			right_sibling_in_parent = pos + 1;
 			break;
 		}
 	}
@@ -690,8 +714,8 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 					left    cursor	 right
 	 */
 
-	if(left_sibling_of_parent >= 0) {
-		Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
+	if(left_sibling_in_parent >= 0) {
+		Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
 
 		if(p_left_node->size >= (MAX+1) / 2) {
 
@@ -708,8 +732,8 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 
 			// transfer key from left sibling through parent
 			// 这里相当于数据转了个圈
-			p_cursor->key[0] = p_parent->key[left_sibling_of_parent];
-			p_parent->key[left_sibling_of_parent] = p_left_node->key[p_left_node->size-1];
+			p_cursor->key[0] = p_parent->key[left_sibling_in_parent];
+			p_parent->key[left_sibling_in_parent] = p_left_node->key[p_left_node->size-1];
 
 			// 把 left node 的最后个child的指针 移动到cursor的第0号位置
 			for(int i=p_cursor->size+1; i>0; --i) {
@@ -723,8 +747,8 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		}
 	}
 
-	if(right_sibling_of_parent <= p_parent->size) {
-		Node* p_right_ndoe = p_parent->ptrs[right_sibling_of_parent];
+	if(right_sibling_in_parent <= p_parent->size) {
+		Node* p_right_ndoe = p_parent->ptrs[right_sibling_in_parent];
 		
         if(p_right_ndoe->size >= (MAX+1) / 2) {
 			p_cursor->key[p_cursor->size] = p_parent->key[pos];
@@ -747,11 +771,11 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 	}
 
 	//transfer wasnt posssible hence do merging
-	if(left_sibling_of_parent >= 0) {
+	if(left_sibling_in_parent >= 0) {
 		
         //leftnode + parent key + cursor
-		Node* p_left_node = p_parent->ptrs[left_sibling_of_parent];
-		p_left_node->key[p_left_node->size] = p_parent->key[left_sibling_of_parent];
+		Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
+		p_left_node->key[p_left_node->size] = p_parent->key[left_sibling_in_parent];
 		
         for(int i = p_left_node->size+1, j = 0; j < p_cursor->size; j++) {
 			p_left_node->key[i] = p_cursor->key[j];
@@ -765,13 +789,13 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		p_cursor->size = 0;
 
 		//delete cursor
-		_RemoveInternal(p_parent->key[left_sibling_of_parent], p_parent, p_cursor);
+		_RemoveInternal(p_parent->key[left_sibling_in_parent], p_parent, p_cursor);
 
-	} else if(right_sibling_of_parent <= p_parent->size) {
+	} else if(right_sibling_in_parent <= p_parent->size) {
 
 		//cursor + parent key + rightnode
-		Node *rightNode = p_parent->ptrs[right_sibling_of_parent];
-		p_cursor->key[p_cursor->size] = p_parent->key[right_sibling_of_parent-1];
+		Node *rightNode = p_parent->ptrs[right_sibling_in_parent];
+		p_cursor->key[p_cursor->size] = p_parent->key[right_sibling_in_parent-1];
 		for(int i = p_cursor->size+1, j = 0; j < rightNode->size; j++) {
 			p_cursor->key[i] = rightNode->key[j];
 		}
@@ -783,7 +807,7 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		rightNode->size = 0;
 
 		//delete cursor
-		_RemoveInternal(p_parent->key[right_sibling_of_parent-1], p_parent, rightNode);
+		_RemoveInternal(p_parent->key[right_sibling_in_parent-1], p_parent, rightNode);
 	}
 }
 
@@ -823,16 +847,16 @@ tuple<Node*/*target*/, Node*/*parent*/, int/*left_sibling*/, int/*right_sibling*
 {
     Node* p_cursor = _root;
     Node* p_parent = nullptr;
-    int left_sibling_of_parent = -1;
-    int right_sibling_of_parent = INT_MAX;
+    int left_sibling_in_parent = -1;
+    int right_sibling_in_parent = INT_MAX;
 
     // 1. 先尝试找到包含 x 的那个叶子节点
     while(!p_cursor->is_leaf) {
 
         for(int i=0; i<p_cursor->size; ++i) {
             p_parent = p_cursor;
-            left_sibling_of_parent = i-1;
-            right_sibling_of_parent = i+1;
+            left_sibling_in_parent = i-1;
+            right_sibling_in_parent = i+1;
 
             if(x < p_cursor->key[i]) {
                 p_cursor = p_cursor->ptrs[i];
@@ -840,15 +864,15 @@ tuple<Node*/*target*/, Node*/*parent*/, int/*left_sibling*/, int/*right_sibling*
             }
 
             if(i == p_cursor->size - 1) {
-                left_sibling_of_parent = i;
-                right_sibling_of_parent = i+2;
+                left_sibling_in_parent = i;
+                right_sibling_in_parent = i+2;
                 p_cursor = p_cursor->ptrs[i+1];
                 break;
             }
         }
     }
     
-    return make_tuple(p_cursor, p_parent, left_sibling_of_parent, right_sibling_of_parent);
+    return make_tuple(p_cursor, p_parent, left_sibling_in_parent, right_sibling_in_parent);
 }
 
 Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
@@ -887,30 +911,30 @@ Node* BPlusTree::_SplitLeafNodeWithInsert(Node* p_cursor, int x)
 	for(int i=0; i<p_cursor->size; ++i) {
 		p_cursor->key[i] = virtual_node[i];
 	}
-    p_cursor->Display("\ton split leaf: old data: ");
+    p_cursor->Display("\tafter split leaf, left node: ");
     
 	for(int i=0, j=p_cursor->size; i< p_new_leaf->size; ++i, ++j) {
 		p_new_leaf->key[i] = virtual_node[j];
 	}
-    p_new_leaf->Display("\ton split leaf: new data: ");
+    p_new_leaf->Display("\tafter split leaf, right node: ");
 
 	return p_new_leaf;
 }
 
-Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int x)
+Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_cursor, Node* p_child, int x)
 {
 	// 我们要分裂 parent
 
-    p_parent->Display("split inner node: ");
+    p_cursor->Display("split inner node: ");
     
 	// 1. 先准备待分裂的数据，包括key和children
 	int virtual_keys[MAX+1];
 	Node* virtual_ptrs[MAX+2];
 	for(int i=0; i<MAX; ++i) {
-		virtual_keys[i] = p_parent->key[i];
+		virtual_keys[i] = p_cursor->key[i];
 	}
 	for(int i=0; i<MAX+1; ++i) {
-		virtual_ptrs[i] = p_parent->ptrs[i];
+		virtual_ptrs[i] = p_cursor->ptrs[i];
 	}
 
 	// 2. 把要要插入的key和新node， 放到virtual的合适位置
@@ -934,27 +958,28 @@ Node* BPlusTree::_SplitInternalNodeWithInsert(Node* p_parent, Node* p_child, int
 	p_new_internal->is_leaf = false;
 
 	// 分配下，每个节点存多少个数据
-	p_parent->size =  (MAX+1) / 2;
-	p_new_internal->size = MAX - p_parent->size;
+	p_cursor->size =  (MAX+1) / 2;
+	p_new_internal->size = MAX - p_cursor->size;
 
 	// 开始拷贝数据
     
-    for(int i=0; i<p_parent->size+1; ++i) {
-        p_parent->key[i] = virtual_keys[i];
+    for(int i=0; i<p_cursor->size+1; ++i) {
+        p_cursor->key[i] = virtual_keys[i];
     }
-    for(int i=0; i<p_parent->size+1; ++i) {
-        p_parent->ptrs[i] = virtual_ptrs[i];
+    for(int i=0; i<p_cursor->size+1; ++i) {
+        p_cursor->ptrs[i] = virtual_ptrs[i];
     }
-    p_parent->Display("\ton split leaf: old data: ");
+    p_cursor->Display("\tafter split inner, left node: ");
     
-	for(int i=0, j=p_parent->size+1; i<p_new_internal->size; ++i, ++j) {
+	for(int i=0, j=p_cursor->size+1; i<p_new_internal->size; ++i, ++j) {
 		p_new_internal->key[i] = virtual_keys[j];
 	}
-	for(int i=0, j=p_parent->size+1; i< p_new_internal->size+1; ++i, ++j) {
+	for(int i=0, j=p_cursor->size+1; i< p_new_internal->size+1; ++i, ++j) {
 		p_new_internal->ptrs[i] = virtual_ptrs[j];
 	}
-    p_new_internal->Display("\ton split inner: new data: ");
-    cout << "\ton split inner: mid: " << x << endl;
+    p_new_internal->Display("\tafter split inner, right node: ");
+    
+    cout << "\tafter split inner, median: " << p_cursor->key[p_cursor->size] << endl;
     
 	return p_new_internal;
 }
