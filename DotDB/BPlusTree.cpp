@@ -10,6 +10,7 @@
 #include <sstream>
 #include <cmath>
 #include <functional>
+#include <algorithm>
 
 
 Node::Node(): is_leaf(false), size(0) {
@@ -107,7 +108,7 @@ int Node::InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插
 	return target_pos;
 }
 
-bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_in_parent)
+bool Node::TryBorrowFromLeftSiblingAsLeaf(Node* p_parent, int left_sibling_in_parent)
 {
     if(left_sibling_in_parent >= 0) {
             // 要是左边兄弟的节点多，就从左边兄弟 借一个 过来
@@ -145,7 +146,7 @@ bool Node::TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_in_parent)
     return false;
 }
 
-bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_in_parent)
+bool Node::TryBorrowFromRightSiblingAsLeaf(Node* p_parent, int right_sibling_in_parent)
 {
     /*
       如下图所示，children 比 key 要多一个
@@ -191,6 +192,66 @@ bool Node::TryBorrowFromRightSibling(Node* p_parent, int right_sibling_in_parent
     
     return false;
 }
+
+bool Node::TryBorrowFromLeftSiblingAsInternal(Node* p_parent, int left_sibling_in_parent)
+{
+    if(left_sibling_in_parent >= 0) {
+        Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
+
+        if(p_left_node->size >= (MAX+1) / 2) {
+            // 把 cursor key 中的 第 0 号位置空出来
+            for(int i=size; i>0; --i) {
+                key[i] = key[i-1];
+            }
+
+            // transfer key from left sibling to cursor through parent
+            // 这里相当于数据转了个圈
+            key[0] = p_parent->key[left_sibling_in_parent];
+            key[left_sibling_in_parent] = p_left_node->key[p_left_node->size-1];
+
+            // 把 left node 的最后个child的指针 移动到cursor的第0号位置
+            for(int i=size+1; i>0; --i) {
+                ptrs[i] = ptrs[i-1];
+            }
+            ptrs[0] = p_left_node->ptrs[p_left_node->size];
+            size += 1;
+            p_left_node->size -= 1;
+
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool Node::TryBorrowFromRightSiblingAsInternal(Node* p_parent, int right_sibling_in_parent, int cur_pos)
+{
+    if(right_sibling_in_parent <= p_parent->size) {
+        Node* p_right_ndoe = p_parent->ptrs[right_sibling_in_parent];
+        
+        if(p_right_ndoe->size >= (MAX+1) / 2) {
+            key[size] = p_parent->key[cur_pos];
+            p_parent->key[cur_pos] = p_right_ndoe->key[0];
+        
+            for(int i=0; i<p_right_ndoe->size-1; ++i) {
+                p_right_ndoe->key[i] = p_right_ndoe->key[i+1];
+            }
+
+            ptrs[size+1] = p_right_ndoe->ptrs[0];
+            for(int i=0; i<p_right_ndoe->size; ++i) {
+                p_right_ndoe->ptrs[i] = p_right_ndoe->ptrs[i+1];
+            }
+
+            size += 1;
+            p_right_ndoe->size -= 1;
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
 int Node::RemoveKeyAndChildAsInternal(int x, Node* p_child)
 {
@@ -241,7 +302,7 @@ int Node::TryRemoveKeyAsLeaf(int x)
     return target_pos;
 }
 
-void Node::MergeToLeft(Node* p_left_node)
+void Node::MergeToLeftAsLeaf(Node* p_left_node)
 {
     // 当 left 兄弟存在时，则把数据合并到 left 兄弟， 然后把 cursor node 删除
 
@@ -261,7 +322,7 @@ void Node::MergeToLeft(Node* p_left_node)
     p_left_node->ptrs[p_left_node->size] = ptrs[size];
 }
 
-void Node::MergeFromRight(Node* p_right_node)
+void Node::MergeFromRightAsLeaf(Node* p_right_node)
 {
     // 右边的 keys 都转移到 cursor 上边来
     for(int i=size, j=0; j<size; ++i, ++j) {
@@ -270,6 +331,40 @@ void Node::MergeFromRight(Node* p_right_node)
     ptrs[size] = nullptr;
     size += p_right_node->size;
     ptrs[size] = p_right_node->ptrs[p_right_node->size];    // 因为childre要比key多一个
+}
+
+void Node::MergeToLeftAsInternal(int left_sibling_in_parent, Node* p_parent, int cur_pos)
+{
+    //leftnode + parent key + cursor
+    Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
+    p_left_node->key[p_left_node->size] = p_parent->key[left_sibling_in_parent];
+    
+    for(int i = p_left_node->size+1, j = 0; j < size; j++) {
+        p_left_node->key[i] = key[j];
+    }
+    for(int i = p_left_node->size+1, j = 0; j < size+1; j++) {
+        p_left_node->ptrs[i] = ptrs[j];
+        ptrs[j] = NULL;
+    }
+
+    p_left_node->size += size+1;
+    size = 0;
+}
+
+void Node::MergeFromRightAsInternal(int right_sibling_in_parent, Node* p_parent, int cur_pos)
+{
+    //cursor + parent key + rightnode
+    Node *p_right_sibling = p_parent->ptrs[right_sibling_in_parent];
+    key[size] = p_parent->key[right_sibling_in_parent-1];
+    for(int i = size+1, j = 0; j < p_right_sibling->size; j++) {
+        key[i] = p_right_sibling->key[j];
+    }
+    for(int i = size+1, j = 0; j < p_right_sibling->size+1; j++) {
+        ptrs[i] = p_right_sibling->ptrs[j];
+        p_right_sibling->ptrs[j] = NULL;
+    }
+    size += p_right_sibling->size + 1;
+    p_right_sibling->size = 0;
 }
 
 Node* Node::SearchBetween(int start, int stop, vector<int>& values)
@@ -435,10 +530,6 @@ void BPlusTree::Remove(int x)
         cout << "not found" << endl;
         return;
     }
-//    if(target_pos == 0 && p_cursor->size > 0) {
-//        cout << "change parent key to:" << p_cursor->key[0] << endl;
-//        p_parent->key[right_sibling_in_parent - 2] = p_cursor->key[0];
-//    }
     
 	// 根节点的特殊处理
 	if(p_cursor == _root) {
@@ -459,11 +550,17 @@ void BPlusTree::Remove(int x)
 		}
 	}
 
+    if(target_pos == 0 || target_pos == p_cursor->size) {
+        _RemoveInternal(x, p_parent, p_cursor);
+    }
+    
 	// 判断当前这个叶子节点需不需要合并
-	if( ! p_cursor->NeedBorrowOrMerge()) {
+	//if( ! p_cursor->NeedBorrowOrMerge()) {
+    if( p_cursor->size >= (MAX + 1) / 2) {
         cout << "no need to borrow or merge, stop here" << endl;
 		return;
 	}
+    
 
 	/*
 	  如下图所示，children 比 key 要多一个
@@ -477,11 +574,11 @@ void BPlusTree::Remove(int x)
 	// 合并的原则是从右往左合并
 	// 		left  <--  cursor  <--  right
 
-    if(p_cursor->TryBorrowFromLeftSibling(p_parent, left_sibling_in_parent)) {
+    if(p_cursor->TryBorrowFromLeftSiblingAsLeaf(p_parent, left_sibling_in_parent)) {
         return;
     }
 
-    if(p_cursor->TryBorrowFromRightSibling(p_parent, right_sibling_in_parent)) {
+    if(p_cursor->TryBorrowFromRightSiblingAsLeaf(p_parent, right_sibling_in_parent)) {
         return;
     }
 
@@ -496,7 +593,7 @@ void BPlusTree::Remove(int x)
 
         cout << "will merge " << p_cursor->Keys() << " to left sibling " << p_left_node->Keys() << endl;
         
-        p_cursor->MergeToLeft(p_left_node);
+        p_cursor->MergeToLeftAsLeaf(p_left_node);
         
         cout << "\t after merge, left sibling: " << p_left_node->Keys() << endl;
         cout << "will remove interval: " << p_parent->key[left_sibling_in_parent] << endl;
@@ -512,7 +609,7 @@ void BPlusTree::Remove(int x)
         
         cout << "will merge " << p_cursor->Keys() << " to right sibling " << p_right_node->Keys() << endl;
 
-        p_cursor->MergeFromRight(p_right_node);
+        p_cursor->MergeFromRightAsLeaf(p_right_node);
         
         cout << "\t after merge, right sibling: " << p_right_node->Keys() << endl;
 
@@ -651,6 +748,22 @@ Node* BPlusTree::_FindParentRecursively(Node* p_cursor, Node* p_child)
 	return p_parent;
 }
 
+tuple<int/*left-sibling*/, int /*cur-pos*/, int/*right-sibling*/> BPlusTree::_FindBrothersPosInParent(Node* p_parent, Node* p_cursor)
+{
+    int left_sibling_in_parent = -1;
+    int right_sibling_in_parent = INT_MAX;
+    int cursor_pos = 0;
+    for(cursor_pos=0; cursor_pos<p_parent->size+1; ++cursor_pos) {
+        if(p_parent->ptrs[cursor_pos] == p_cursor) {
+            left_sibling_in_parent = cursor_pos - 1;
+            right_sibling_in_parent = cursor_pos + 1;
+            break;
+        }
+    }
+
+    return make_tuple(left_sibling_in_parent, cursor_pos, right_sibling_in_parent);
+}
+
 void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be deleted*/)
 {
 	if(p_cursor == _root) {
@@ -680,134 +793,51 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		}
 	}
 
-	// TODO: x 是要删除的节点？？
 	// 从 cursor 里边删除x
-    
-    cout << "will remove internal key: " << x << " and child" << p_child->Keys() << " from " << p_cursor->Keys() << endl;
-    int pos = p_cursor->RemoveKeyAndChildAsInternal(x, p_child);
-    cout << "after remove internal key: " << x << p_cursor->Keys() << endl;
+    cout << "will remove internal key: " << x << " and child:[" << p_child->Keys() << "] from " << p_cursor->Keys() << endl;
+    p_cursor->RemoveKeyAndChildAsInternal(x, p_child);
+    cout << "after remove internal key: [" << p_cursor->Keys() << "]" << endl;
 
-	// 父节点满足 B+ 树的要求了，到此为止
+	// 当前节点满足 B+ 树的要求了，到此为止
 	// 根节点除外
-	if(p_cursor->size >= (MAX+1) / 2 -1) {
+    if(p_cursor->size >= 1 /*(MAX + 1) / 2 - 1*/) {
 		return ;
 	}
 	if(p_cursor == _root) {
 		return;
 	}
 
-	Node* p_parent = _FindParentRecursively(_root, p_cursor);
-
+    // 找到 p_cursor 的左右兄弟节点
+    int cursor_pos_in_parent = -1;
     int left_sibling_in_parent = -1;
     int right_sibling_in_parent = INT_MAX;
-	for(pos=0; pos<p_parent->size+1; ++pos) {
-		if(p_parent->ptrs[pos] == p_cursor) {
-			left_sibling_in_parent = pos - 1;
-			right_sibling_in_parent = pos + 1;
-			break;
-		}
-	}
+	Node* p_parent = _FindParentRecursively(_root, p_cursor);
+    tie(left_sibling_in_parent, cursor_pos_in_parent, right_sibling_in_parent) = _FindBrothersPosInParent(p_parent, p_cursor);
 
-	/*
-						   parent
-						/	  |     \
-					left    cursor	 right
-	 */
+    // 从左边兄弟节点借一个
+    if(p_cursor->TryBorrowFromLeftSiblingAsInternal(p_parent, left_sibling_in_parent)) {
+        return ;
+    }
 
-	if(left_sibling_in_parent >= 0) {
-		Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
+    // 从右边兄弟节点借一个
+    if(p_cursor->TryBorrowFromRightSiblingAsInternal(p_parent, right_sibling_in_parent, cursor_pos_in_parent)) {
+        return ;
+    }
 
-		if(p_left_node->size >= (MAX+1) / 2) {
-
-			/*
-								   parent
-								/	       \
-							 left         cursor
-			 */
-
-			// 把 cursor key 中的 第 0 号位置空出来
-			for(int i=p_cursor->size; i>0; --i) {
-				p_cursor->key[i] = p_cursor->key[i-1];
-			}
-
-			// transfer key from left sibling through parent
-			// 这里相当于数据转了个圈
-			p_cursor->key[0] = p_parent->key[left_sibling_in_parent];
-			p_parent->key[left_sibling_in_parent] = p_left_node->key[p_left_node->size-1];
-
-			// 把 left node 的最后个child的指针 移动到cursor的第0号位置
-			for(int i=p_cursor->size+1; i>0; --i) {
-				p_cursor->ptrs[i] = p_cursor->ptrs[i-1];
-			}
-			p_cursor->ptrs[0] = p_left_node->ptrs[p_left_node->size];
-			p_cursor->size += 1;
-			p_left_node->size -= 1;
-
-			return ;
-		}
-	}
-
-	if(right_sibling_in_parent <= p_parent->size) {
-		Node* p_right_ndoe = p_parent->ptrs[right_sibling_in_parent];
-		
-        if(p_right_ndoe->size >= (MAX+1) / 2) {
-			p_cursor->key[p_cursor->size] = p_parent->key[pos];
-			p_parent->key[pos] = p_right_ndoe->key[0];
-		
-            for(int i=0; i<p_right_ndoe->size-1; ++i) {
-				p_right_ndoe->key[i] = p_right_ndoe->key[i+1];
-			}
-
-			p_cursor->ptrs[p_cursor->size+1] = p_right_ndoe->ptrs[0];
-			for(int i=0; i<p_right_ndoe->size; ++i) {
-				p_right_ndoe->ptrs[i] = p_right_ndoe->ptrs[i+1];
-			}
-
-			p_cursor->size += 1;
-			p_right_ndoe->size -= 1;
-
-			return ;
-		}
-	}
-
-	//transfer wasnt posssible hence do merging
+    //transfer wasnt posssible hence do merging
 	if(left_sibling_in_parent >= 0) {
 		
-        //leftnode + parent key + cursor
-		Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
-		p_left_node->key[p_left_node->size] = p_parent->key[left_sibling_in_parent];
-		
-        for(int i = p_left_node->size+1, j = 0; j < p_cursor->size; j++) {
-			p_left_node->key[i] = p_cursor->key[j];
-		}
-		for(int i = p_left_node->size+1, j = 0; j < p_cursor->size+1; j++) {
-			p_left_node->ptrs[i] = p_cursor->ptrs[j];
-			p_cursor->ptrs[j] = NULL;
-		}
-
-		p_left_node->size += p_cursor->size+1;
-		p_cursor->size = 0;
+        p_cursor->MergeToLeftAsInternal(left_sibling_in_parent, p_parent, cursor_pos_in_parent);
 
 		//delete cursor
 		_RemoveInternal(p_parent->key[left_sibling_in_parent], p_parent, p_cursor);
 
 	} else if(right_sibling_in_parent <= p_parent->size) {
 
-		//cursor + parent key + rightnode
-		Node *rightNode = p_parent->ptrs[right_sibling_in_parent];
-		p_cursor->key[p_cursor->size] = p_parent->key[right_sibling_in_parent-1];
-		for(int i = p_cursor->size+1, j = 0; j < rightNode->size; j++) {
-			p_cursor->key[i] = rightNode->key[j];
-		}
-		for(int i = p_cursor->size+1, j = 0; j < rightNode->size+1; j++) {
-			p_cursor->ptrs[i] = rightNode->ptrs[j];
-			rightNode->ptrs[j] = NULL;
-		}
-		p_cursor->size += rightNode->size + 1;
-		rightNode->size = 0;
+        p_cursor->MergeFromRightAsInternal(right_sibling_in_parent, p_parent, cursor_pos_in_parent);
 
 		//delete cursor
-		_RemoveInternal(p_parent->key[right_sibling_in_parent-1], p_parent, rightNode);
+		_RemoveInternal(p_parent->key[right_sibling_in_parent-1], p_parent, p_parent->ptrs[right_sibling_in_parent]);
 	}
 }
 

@@ -53,18 +53,25 @@ public:
 	// 返回在 p_parent 中插入的位置
 	int InsertKeyAsInternal(int x/*要插入的数据*/, Node* p_child/*要插入的孩子节点 */);
     
-    bool TryBorrowFromLeftSibling(Node* p_parent, int left_sibling_in_parent);
-    bool TryBorrowFromRightSibling(Node* p_parent, int right_sibling_in_parent);
+    bool TryBorrowFromLeftSiblingAsLeaf(Node* p_parent, int left_sibling_in_parent);
+    bool TryBorrowFromRightSiblingAsLeaf(Node* p_parent, int right_sibling_in_parent);
+    
+    bool TryBorrowFromLeftSiblingAsInternal(Node* p_parent, int left_sibling_in_parent);
+    bool TryBorrowFromRightSiblingAsInternal(Node* p_parent, int right_sibling_in_parent, int cur_pos);
+
     
     //   返回 x 的 pos
     int RemoveKeyAndChildAsInternal(int x, Node* p_child);
     
     int TryRemoveKeyAsLeaf(int x);
     
-    void MergeToLeft(Node* p_left_node);
+    void MergeToLeftAsLeaf(Node* p_left_node);
+    void MergeFromRightAsLeaf(Node* p_right_node);
     
-    void MergeFromRight(Node* p_right_node);
     
+    void MergeToLeftAsInternal(int left_sibling_in_parent, Node* p_parent, int cur_pos);
+    void MergeFromRightAsInternal(int right_sibling_in_parent, Node* p_parent, int cur_pos);
+
     // return right sibling if need to continue to search or nullptr
     Node* SearchBetween(int start, int stop, vector<int>& values);
 
@@ -96,6 +103,7 @@ public:
 private:
 	void _InsertInternal(int x, Node* p_parent, Node* p_child);
 	Node* _FindParentRecursively(Node* p_cursor, Node* p_child);
+    tuple<int/*left-sibling-pos*/, int/*cur-pos*/, int/*right-sibling-pos*/> _FindBrothersPosInParent(Node* p_parent, Node* p_cursor);
 	void _RemoveInternal(int x, Node* p_cursor, Node* p_child);
 
     tuple<Node*/*target*/, Node*/*parent*/> _FindTargetLeafNodeWithParent(int x);
