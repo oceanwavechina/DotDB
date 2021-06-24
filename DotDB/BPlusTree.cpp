@@ -26,7 +26,7 @@ bool Node::NeedBorrowOrMerge()
 {
     // 这里是一个node要包含的最少的key的个数
     // 少于这个数值就要合并了
-    return size < (MAX+1) / 2;
+    return size < (MAX+1) / 2 && size > 1;
 }
 
 void Node::Display(const string& msg)
@@ -115,7 +115,7 @@ bool Node::TryBorrowFromLeftSiblingAsLeaf(Node* p_parent, int left_sibling_in_pa
             // 这里多的判断是 >= (MAX+1) / 2 + 1
         Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
 
-        if(p_left_node->size >= (MAX+1) / 2 + 1) {
+        if(p_left_node->size >= (MAX+1) / 2 + 1 && p_left_node->size > 1) {
 
             cout << "will borrow " << key[0] << "from " << p_left_node->Keys() << " left sibling" << endl;
             
@@ -162,7 +162,7 @@ bool Node::TryBorrowFromRightSiblingAsLeaf(Node* p_parent, int right_sibling_in_
         // 要是右边兄弟的节点多，就从右边兄弟 借一个 过来
         Node* p_right_node = p_parent->ptrs[right_sibling_in_parent];
 
-        if(p_right_node->size >= (MAX+1) / 2 + 1) {
+        if(p_right_node->size >= (MAX+1) / 2 + 1 && p_right_node->size > 1) {
 
             cout << "will borrow " << key[0] << "from " << p_right_node->Keys() << " right sibling" << endl;
             
@@ -198,7 +198,7 @@ bool Node::TryBorrowFromLeftSiblingAsInternal(Node* p_parent, int left_sibling_i
     if(left_sibling_in_parent >= 0) {
         Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
 
-        if(p_left_node->size >= (MAX+1) / 2) {
+        if(p_left_node->size > (MAX+1) / 2 && p_left_node->size > 1) {
             // 把 cursor key 中的 第 0 号位置空出来
             for(int i=size; i>0; --i) {
                 key[i] = key[i-1];
@@ -229,7 +229,7 @@ bool Node::TryBorrowFromRightSiblingAsInternal(Node* p_parent, int right_sibling
     if(right_sibling_in_parent <= p_parent->size) {
         Node* p_right_ndoe = p_parent->ptrs[right_sibling_in_parent];
         
-        if(p_right_ndoe->size >= (MAX+1) / 2) {
+        if(p_right_ndoe->size > (MAX+1) / 2 && p_right_ndoe->size > 1) {
             key[size] = p_parent->key[cur_pos];
             p_parent->key[cur_pos] = p_right_ndoe->key[0];
         
@@ -550,13 +550,8 @@ void BPlusTree::Remove(int x)
 		}
 	}
 
-    if(target_pos == 0 || target_pos == p_cursor->size) {
-        _RemoveInternal(x, p_parent, p_cursor);
-    }
-    
 	// 判断当前这个叶子节点需不需要合并
-	//if( ! p_cursor->NeedBorrowOrMerge()) {
-    if( p_cursor->size >= (MAX + 1) / 2) {
+	if( ! p_cursor->NeedBorrowOrMerge()) {
         cout << "no need to borrow or merge, stop here" << endl;
 		return;
 	}
@@ -591,7 +586,7 @@ void BPlusTree::Remove(int x)
 
 		Node* p_left_node = p_parent->ptrs[left_sibling_in_parent];
 
-        cout << "will merge " << p_cursor->Keys() << " to left sibling " << p_left_node->Keys() << endl;
+        cout << "will merge [" << p_cursor->Keys() << "] to left sibling [" << p_left_node->Keys() << "]" << endl;
         
         p_cursor->MergeToLeftAsLeaf(p_left_node);
         
