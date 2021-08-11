@@ -552,6 +552,7 @@ void BPlusTree::Remove(int x)
 
 	// 判断当前这个叶子节点需不需要合并
 	if( ! p_cursor->NeedBorrowOrMerge()) {
+        
         cout << "no need to borrow or merge, stop here" << endl;
 		return;
 	}
@@ -834,6 +835,13 @@ void BPlusTree::_RemoveInternal(int x, Node* p_cursor, Node* p_child /*to be del
 		//delete cursor
 		_RemoveInternal(p_parent->key[right_sibling_in_parent-1], p_parent, p_parent->ptrs[right_sibling_in_parent]);
 	}
+}
+
+void BPlusTree::_ReplaceParentKeyWith(int x, Node* p_parent)
+{
+    // 1. 更新父节点的key
+    //      注意，如果父节点中要替换的key比x大，那我们就不替换了
+    // 2. 继续上溯知道根节点
 }
 
 tuple<Node*/*target*/, Node*/*parent*/> BPlusTree::_FindTargetLeafNodeWithParent(int x)

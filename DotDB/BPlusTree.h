@@ -105,7 +105,8 @@ private:
 	Node* _FindParentRecursively(Node* p_cursor, Node* p_child);
     tuple<int/*left-sibling-pos*/, int/*cur-pos*/, int/*right-sibling-pos*/> _FindBrothersPosInParent(Node* p_parent, Node* p_cursor);
 	void _RemoveInternal(int x, Node* p_cursor, Node* p_child);
-
+    void _ReplaceParentKeyWith(int x, Node* p_parent);
+    
     tuple<Node*/*target*/, Node*/*parent*/> _FindTargetLeafNodeWithParent(int x);
     tuple<Node*/*target*/, Node*/*parent*/, int/*left_sibling*/, int/*right_sibling*/> _FindTargetLeafNodeWithParentAndBrothers(int x);
     
